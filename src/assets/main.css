@@ -1,0 +1,157 @@
+/* ================
+   d-journey • globals
+   ================ */
+
+/* 1) Custom props (marca, foco, raios) */
+:root {
+  --dj-grad-from: #6750a4; /* primary */
+  --dj-grad-to: #22d3ee; /* secondary */
+  --dj-focus: #22d3ee;
+  --dj-radius-xl: 16px;
+  --dj-radius-2xl: 20px;
+}
+
+/* 2) Base: respeita o tema do Vuetify via CSS vars */
+html,
+body,
+#app {
+  height: 100%;
+  background-color: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-surface));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3) Acessibilidade: foco visível consistente */
+*:focus-visible {
+  outline: 2px solid var(--dj-focus);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* 4) Botão com gradiente de marca (use class="dj-gradient") */
+.v-btn.dj-gradient {
+  background-image: linear-gradient(45deg, var(--dj-grad-from), var(--dj-grad-to));
+  color: #fff;
+  border: none;
+}
+.v-btn.dj-gradient:hover {
+  filter: saturate(1.05) brightness(1.02);
+}
+.v-btn.dj-gradient:focus-visible {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--dj-grad-to), transparent 80%);
+}
+
+/* 5) Superfícies utilitárias (reutilizáveis nos cards/seções) */
+.soft-card {
+  background: color-mix(in oklab, rgb(var(--v-theme-surface)) 92%, transparent);
+  border-radius: var(--dj-radius-xl);
+  border: 1px solid color-mix(in oklab, rgb(var(--v-theme-on-surface)) 12%, transparent);
+}
+
+.glass-panel {
+  backdrop-filter: saturate(1.1) blur(8px);
+  border-radius: var(--dj-radius-2xl);
+  border: 1px solid color-mix(in oklab, rgb(var(--v-theme-on-surface)) 12%, transparent);
+  background:
+    radial-gradient(1200px 800px at 100% -20%, rgba(var(--v-theme-primary), 0.08), transparent 60%),
+    radial-gradient(
+      1000px 600px at -10% 110%,
+      rgba(var(--v-theme-secondary), 0.08),
+      transparent 55%
+    ),
+    linear-gradient(180deg, rgb(var(--v-theme-surface)) 0%, rgb(var(--v-theme-background)) 100%);
+}
+
+/* 6) Reaplica estilos globais usados nos seus componentes */
+.tracker-card {
+  composes: glass-panel;
+} /* se o bundler não suportar 'composes', copie a regra de .glass-panel aqui */
+.tracker-card {
+  backdrop-filter: saturate(1.1) blur(8px);
+  border: 1px solid color-mix(in oklab, rgb(var(--v-theme-on-surface)) 12%, transparent);
+  background:
+    radial-gradient(1200px 800px at 100% -20%, rgba(var(--v-theme-primary), 0.08), transparent 60%),
+    radial-gradient(
+      1000px 600px at -10% 110%,
+      rgba(var(--v-theme-secondary), 0.08),
+      transparent 55%
+    ),
+    linear-gradient(180deg, rgb(var(--v-theme-surface)) 0%, rgb(var(--v-theme-background)) 100%);
+}
+
+.day-sheet,
+.week-sheet {
+  background: color-mix(in oklab, rgb(var(--v-theme-surface)) 90%, transparent);
+  border-radius: var(--dj-radius-xl);
+  border: 1px solid color-mix(in oklab, rgb(var(--v-theme-on-surface)) 12%, transparent);
+}
+
+/* 7) Helpers de espaçamento/anim */
+.gap-2 {
+  gap: 0.5rem;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+.gap-4 {
+  gap: 1rem;
+}
+
+.fade-in {
+  animation: fade-in 0.24s ease-out both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 8) Ajuste de inputs compactos (opcional) */
+.v-field--variant-outlined .v-field__outline__start,
+.v-field--variant-outlined .v-field__outline__end {
+  border-color: color-mix(in oklab, rgb(var(--v-theme-on-surface)) 18%, transparent);
+}
+.v-field--focused .v-field__outline__start,
+.v-field--focused .v-field__outline__end {
+  border-color: rgb(var(--v-theme-primary));
+}
+
+/* 9) Select “Semanas” com largura mínima */
+.history-select .v-field {
+  min-width: 120px;
+}
+
+/* 10) Scrollbar sutil (webkit) */
+*::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, rgb(var(--v-theme-on-surface)) 20%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, rgb(var(--v-theme-on-surface)) 30%, transparent);
+}
+
+/* 11) Pequenos refinamentos visuais */
+.v-card {
+  border-radius: var(--dj-radius-xl);
+}
+.v-avatar {
+  border-radius: 12px;
+}
+.v-chip {
+  border-radius: 999px;
+}

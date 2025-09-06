@@ -1,0 +1,29 @@
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# --- Build / cache ---
+dist/
+dist-ssr/
+.vite/
+.cache/
+.temp/
+coverage/
+
+# --- Env (mantenha um exemplo versionado) ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Editor / SO ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sw?
+.DS_Store
+Thumbs.db
