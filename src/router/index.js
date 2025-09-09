@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Usuario from '@/layout/Usuario.vue'
-import Admin from '@/layout/Admin.vue'
-import DJourneyTimeTracker from '@/components/DJourneyTimeTracker.vue'
-import HistoricoMensal from '@/components/HistoricoMensal.vue'
+import Admin from '@/layout/Gestor.vue'
+import DJourneyTimeTracker from '@/components/usuario/DJourneyTimeTracker.vue'
+import HistoricoMensal from '@/components/usuario/HistoricoMensal.vue'
+import { useUserStore } from '@/stores/user'
 
 const routes = [
   {
@@ -11,39 +12,63 @@ const routes = [
     name: 'Login',
     component: Login,
   },
+
   {
-    path: '/user/:id', // localhost:5173/user/1
+    path: '/user/:id',
     name: 'usuario',
     component: Usuario,
+    meta: { requiresAuth: true },
     children: [
-      { path: '', name: 'djourney', component: DJourneyTimeTracker }, // localhost:5173/user
+      { path: '', name: 'djourney', component: DJourneyTimeTracker },
       {
         path: 'historico-mensal',
         name: 'historico-mensal',
         component: HistoricoMensal,
-        props: () => ({
+        props: (route) => ({
           apiBase: import.meta.env.VITE_API_BASE || 'http://localhost:3000',
-          userId: 1,
+          userId: Number(route.params.id),
           order: 'desc',
         }),
-      }, // localhost:5173/user/historico-mensal
+      },
     ],
   },
+
   {
-    path: '/admin/:id', // localhost:5173/admin/2
+    path: '/admin/:id',
     name: 'Admins',
     component: Admin,
+    meta: { requiresAuth: true },
   },
+
+  // rota dedicada para logout
+  {
+    path: '/logout',
+    name: 'logout',
+    beforeEnter: () => {
+      const store = useUserStore()
+      store.logout() // limpa store + localStorage
+      return { name: 'Login' } // volta pro login
+    },
+  },
+
   {
     path: '/:catchAll(.*)*',
-    // redirect: '/home', // Pode redirecionar ou apresentar um componente
-    component: () => import('@/components/NotFound.vue'),
+    component: () => import('@/views/NotFound.vue'),
   },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: routes,
+  routes,
+})
+
+// Guard: reidrata e protege rotas autenticadas
+router.beforeEach((to) => {
+  const store = useUserStore()
+  if (!store.isLoggedIn) store.bootstrap()
+  if (to.meta?.requiresAuth && !store.isLoggedIn) {
+    return { name: 'Login', query: { redirect: to.fullPath } }
+  }
 })
 
 export default router

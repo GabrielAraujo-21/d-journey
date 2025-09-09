@@ -16,13 +16,7 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import App from './App.vue'
 import router from './router'
 
-// Seus estilos globais (devem vir após 'vuetify/styles' para sobrescrever)
-// import '@/assets/main.css'
-
 // Instância do Vuetify
-// - components/directives: ajuda o tree-shaking e evita warnings
-// - icons: configura o set MDI
-// - theme: se quiser, dá pra ligar aqui; caso contrário, use o tema padrão
 const vuetify = createVuetify({
   components,
   directives,
@@ -31,12 +25,24 @@ const vuetify = createVuetify({
     aliases,
     sets: { mdi },
   },
-  // theme: { defaultTheme: 'djourneyLight', themes: { ... } }, // opcional
 })
 
-/* Bootstrap da aplicação */
+// Bootstrap da aplicação
+import { useUserStore } from '@/stores/user'
+
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+
+app.use(pinia)
+
+// reidrata o usuário ANTES de ativar as rotas
+const userStore = useUserStore()
+userStore.bootstrap()
+
 app.use(router)
 app.use(vuetify)
+
+// Dica: o tema será aplicado no Login ao entrar
+// e no layout Usuario.vue ao montar (ver arquivo).
+
 app.mount('#app')

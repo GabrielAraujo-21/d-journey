@@ -6,13 +6,13 @@
       </v-avatar>
       <div>
         <h2 class="text-h6 font-weight-bold mb-0">Histórico mensal</h2>
-        <div class="text-caption text-medium-emphasis">
+        <div class="text-caption text-medium-emphasis text-secondary">
           Último mês fechado e mês atual (marcações diárias)
         </div>
       </div>
       <v-spacer />
-      <v-chip class="mr-2" variant="tonal" prepend-icon="mdi-account-clock">
-        Usuário #{{ userId }}
+      <v-chip class="mr-2" variant="tonal" prepend-icon="mdi-account-clock" color="primary">
+        ID: #{{ userStore.id }} - Nome: {{ userStore.name }}
       </v-chip>
       <v-chip variant="tonal" color="secondary" prepend-icon="mdi-cloud-sync"> API </v-chip>
     </div>
@@ -196,32 +196,26 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { useRegistrosStore } from '@/stores/registros'
 
-/** Props obrigatórias e opções */
+const userStore = useUserStore()
+
 const props = defineProps({
   userId: { type: Number, default: 1 },
-
-  /** Base da API json-server (ex.: "http://localhost:3000") */
   apiBase: { type: String, required: true, default: 'http://localhost:3000' },
-
-  /** 'asc' (mais antigo → mais recente) | 'desc' (mais recente → mais antigo) */
-  order: {
-    type: String,
-    default: 'desc',
-    validator: (v) => ['asc', 'desc'].includes(v),
-  },
-  /** Sem efeito prático na ordenação dos dias, apenas rótulo */
+  order: { type: String, default: 'desc', validator: (v) => ['asc', 'desc'].includes(v) },
   startOnMonday: { type: Boolean, default: true },
 })
 
 const userId = props.userId
-const apiBase = computed(() => props.apiBase?.replace(/\/$/, '')) // sem barra final
+const apiBase = computed(() => props.apiBase?.replace(/\/$/, ''))
 const tab = ref('atual')
 
-// --- Datas base ---
+// Datas base (mantidas)
 const today = new Date()
-const { start: startAtual, end: endAtual } = monthRangeCurrent(today) // 1º dia até HOJE
-const { start: startAnterior, end: endAnterior } = monthRangePrevious(today) // mês anterior completo
+const { start: startAtual, end: endAtual } = monthRangeCurrent(today)
+const { start: startAnterior, end: endAnterior } = monthRangePrevious(today)
 
 const labelMesAtual = computed(() => monthLabel(startAtual))
 const labelMesAnterior = computed(() => monthLabel(startAnterior))
@@ -230,7 +224,6 @@ const periodoAnterior = computed(
   () => `${formatShort(startAnterior)} – ${formatShort(endAnterior)}`,
 )
 
-// --- Estado e load/errors ---
 const stateAtual = reactive({ days: [], total: 0, daysWorked: 0 })
 const stateAnterior = reactive({ days: [], total: 0, daysWorked: 0 })
 const loadingAtual = ref(false)
@@ -238,7 +231,10 @@ const loadingAnterior = ref(false)
 const errorAtual = ref('')
 const errorAnterior = ref('')
 
-// --- Carregamento ---
+// Store de registros (só para buscar a faixa e reaproveitar cache se quiser)
+const reg = useRegistrosStore()
+reg.init({ userId, apiBase: apiBase.value })
+
 onMounted(async () => {
   if (!apiBase.value) return
   loadingAtual.value = true
@@ -252,22 +248,23 @@ onMounted(async () => {
     ])
     Object.assign(stateAtual, atual)
     Object.assign(stateAnterior, anterior)
-  } catch (e) {
-    // erros já são setados dentro da função fetch
   } finally {
     loadingAtual.value = false
     loadingAnterior.value = false
   }
 })
 
-// --- Builders ---
 async function buildMonthData(startDate, endDate, order) {
-  const map = await fetchMapFromApi(startDate, endDate).catch((e) => {
+  const mapWithIds = await reg.fetchRange(startDate, endDate).catch((e) => {
     const msg = e?.message || 'Falha ao buscar registros'
     if (toISODate(startDate) === toISODate(startAtual)) errorAtual.value = msg
     else errorAnterior.value = msg
     return {}
   })
+
+  // adaptamos para o mesmo shape esperado: { iso: pares[] }
+  const map = {}
+  for (const [iso, obj] of Object.entries(mapWithIds)) map[iso] = obj.pairs || []
 
   const days = []
   let cursor = new Date(startDate)
@@ -278,53 +275,24 @@ async function buildMonthData(startDate, endDate, order) {
     days.push({
       iso,
       dateLabel: formatShort(cursor),
-      weekday: weekdayLabel(cursor, props.startOnMonday),
+      weekday: weekdayLabel(cursor),
       total,
       pairsCount: pares.length,
       pares,
     })
     cursor = addDays(cursor, 1)
   }
-
-  // Ordenação dos DIAS conforme prop
-  if (order === 'desc') {
-    days.reverse()
-  }
-  // (Se preferir, em vez de reverse, dá para ordenar por iso:
-  // days.sort((a, b) => order === 'asc' ? (a.iso > b.iso ? 1 : -1) : (a.iso < b.iso ? 1 : -1)))
+  if (order === 'desc') days.reverse()
 
   const total = days.reduce((a, b) => a + b.total, 0)
   const daysWorked = days.filter((d) => d.total > 0).length
   return { days, total, daysWorked }
 }
 
-async function fetchMapFromApi(startDate, endDate) {
-  const startISO = toISODate(startDate)
-  const endISO = toISODate(endDate)
-  // A ordenação `_order` aqui afeta apenas os REGISTROS retornados,
-  // mas a lista final de DIAS é ordenada pela prop no final.
-  const url =
-    `${apiBase.value}/registros?userId=${encodeURIComponent(userId)}` +
-    `&data_gte=${encodeURIComponent(startISO)}` +
-    `&data_lte=${encodeURIComponent(endISO)}` +
-    `&_sort=data&_order=asc`
-
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Erro ${res.status} ao buscar registros`)
-  const arr = await res.json()
-
-  // Mapeia por data para preencher rapidamente
-  const map = {}
-  for (const it of arr) {
-    map[it.data] = Array.isArray(it.pares) ? it.pares : []
-  }
-  return map
-}
-
-// --- Utils de data/tempo ---
+/* ===== Utils (mesma lógica) ===== */
 function monthRangeCurrent(d) {
   const start = new Date(d.getFullYear(), d.getMonth(), 1)
-  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate()) // até hoje
+  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   normalize(start)
   normalize(end)
   return { start, end }
@@ -332,7 +300,7 @@ function monthRangeCurrent(d) {
 function monthRangePrevious(d) {
   const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1)
   const start = new Date(prev.getFullYear(), prev.getMonth(), 1)
-  const end = new Date(prev.getFullYear(), prev.getMonth() + 1, 0) // último dia
+  const end = new Date(prev.getFullYear(), prev.getMonth() + 1, 0)
   normalize(start)
   normalize(end)
   return { start, end }
@@ -374,7 +342,7 @@ function pairMinutes(p) {
   const b = toMinutes(p.out)
   if (Number.isNaN(a) || Number.isNaN(b)) return 0
   let diff = b - a
-  if (diff < 0) diff += 24 * 60 // cruza a meia-noite
+  if (diff < 0) diff += 24 * 60
   return Math.max(0, diff)
 }
 function formatMinutes(mins) {

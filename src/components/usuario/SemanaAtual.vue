@@ -1,6 +1,6 @@
 <template>
   <!-- Resumo da semana atual -->
-  <div class="d-flex align-center mt-8 mb-3">
+  <div class="d-flex align-center mb-3">
     <h3 class="text-subtitle-1 font-weight-medium mb-0">
       Semana atual ({{ weekLabel(currentWeekStart) }})
     </h3>
@@ -32,6 +32,7 @@
             :model-value="Math.min(100, Math.round((d.total / targetDailyMinutes) * 100))"
             height="8"
             rounded
+            color="primary"
           />
         </v-card>
       </v-col>
@@ -40,6 +41,8 @@
 </template>
 
 <script setup>
+import { useRegistrosStore } from '@/stores/registros'
+
 const props = defineProps({
   currentWeekStart: { type: Object, required: true }, // Date
   currentWeek: { type: Object, required: true },

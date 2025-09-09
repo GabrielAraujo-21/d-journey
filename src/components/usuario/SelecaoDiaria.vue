@@ -1,7 +1,7 @@
 <template>
   <!-- Seleção do dia -->
   <v-row class="mb-4" align="center">
-    <v-col cols="12" md="5">
+    <v-col cols="12" md="4">
       <v-text-field
         v-model="currentDateModel"
         label="Dia"
@@ -12,7 +12,7 @@
       />
     </v-col>
 
-    <v-col cols="12" md="2" class="d-flex align-end justify-end">
+    <v-col cols="12" md="3" class="d-flex align-end justify-end">
       <v-btn color="primary" prepend-icon="mdi-plus" class="text-none" @click="addPair()">
         Adicionar par
       </v-btn>
@@ -53,7 +53,7 @@
       </v-col>
     </v-row>
 
-    <v-row v-for="(p, idx) in pairs" :key="idx" class="align-center pair-row">
+    <v-row v-for="(p, idx) in pairs" :key="idx" class="d-flex align-baseline pair-row">
       <v-col cols="12" sm="4">
         <v-text-field
           v-model="p.in"
@@ -147,14 +147,20 @@
     <!-- Totais do dia -->
     <div class="d-flex flex-wrap align-center justify-space-between mt-2">
       <div class="d-flex align-center gap-2">
-        <v-chip variant="flat" color="primary" size="large" class="font-weight-medium">
+        <v-chip variant="flat" color="primary" size="large" class="font-weight-medium mr-3">
           Total do dia: {{ formatMinutes(dayTotal) }}
         </v-chip>
-        <v-chip v-if="incompleteCount > 0" variant="tonal" color="warning" size="small">
+        <v-chip
+          v-if="incompleteCount > 0"
+          variant="tonal"
+          color="warning"
+          size="small"
+          class="mr-3"
+        >
           {{ incompleteCount }}
           {{ incompleteCount === 1 ? 'par incompleto' : 'pares incompletos' }}
         </v-chip>
-        <v-chip v-if="invalidCount > 0" variant="tonal" color="error" size="small">
+        <v-chip v-if="invalidCount > 0" variant="tonal" color="error" size="small" class="mr-3">
           {{ invalidCount }} {{ invalidCount === 1 ? 'par inválido' : 'pares inválidos' }}
         </v-chip>
       </div>
@@ -165,6 +171,7 @@
           height="12"
           :model-value="progressDaily"
           :striped="dayTotal < targetDailyMinutes"
+          color="primary"
         />
         <div class="text-caption text-medium-emphasis mt-1">
           Meta diária: {{ formatMinutes(targetDailyMinutes) }} • Progresso:

@@ -5,24 +5,39 @@
       "name": "Gabriel",
       "email": "gabriel@d-journey.local",
       "password": "123456",
-      "role": "user",
+      "PerfilTipoId": 4,
       "escalaId": 1,
       "tipoContratoId": 1,
       "ativo": true,
       "avatarUrl": "sem-imagem.png",
-      "themeColor": "dark"
+      "themeColor": "dark",
+      "managerId": 2
     },
     {
       "id": 2,
-      "name": "Admin",
+      "name": "Usuario Gestor",
       "email": "admin@d-journey.local",
       "password": "admin",
-      "role": "admin",
+      "PerfilTipoId": 3,
       "escalaId": 1,
       "tipoContratoId": 1,
       "ativo": true,
       "avatarUrl": "sem-imagem.png",
-      "themeColor": "light"
+      "themeColor": "light",
+      "managerId": 4
+    },
+    {
+      "id": 3,
+      "name": "Peter Lowerfield",
+      "email": "peter@d-journey.local",
+      "password": "123456",
+      "PerfilTipoId": 3,
+      "escalaId": 1,
+      "tipoContratoId": 1,
+      "ativo": true,
+      "avatarUrl": "sem-imagem.png",
+      "themeColor": "light",
+      "managerId": 2
     }
   ],
   "escalas": [
@@ -256,6 +271,34 @@
       "totalMin": 330,
       "createdAt": "2025-09-05T08:00:00.000Z",
       "updatedAt": "2025-09-05T18:10:00.000Z"
+    },
+    {
+      "userId": 1,
+      "data": "2025-09-06",
+      "pares": [
+        {
+          "in": "08:47",
+          "out": "09:10"
+        }
+      ],
+      "totalMin": 23,
+      "createdAt": "2025-09-06T03:37:27.629Z",
+      "updatedAt": "2025-09-06T12:01:09.503Z",
+      "id": 11
+    },
+    {
+      "userId": 1,
+      "data": "2025-09-08",
+      "pares": [
+        {
+          "in": "",
+          "out": ""
+        }
+      ],
+      "totalMin": 0,
+      "createdAt": "2025-09-09T01:27:14.055Z",
+      "updatedAt": "2025-09-09T01:49:39.014Z",
+      "id": 12
     }
   ],
   "tipoContratos": [
@@ -270,6 +313,24 @@
     {
       "id": 3,
       "descricao": "Estágio"
+    }
+  ],
+  "PerfilTipos": [
+    {
+      "id": 1,
+      "descricao": "Super Admin"
+    },
+    {
+      "id": 2,
+      "descricao": "Admin"
+    },
+    {
+      "id": 3,
+      "descricao": "Gestor"
+    },
+    {
+      "id": 4,
+      "descricao": "Usuário"
     }
   ]
 }
