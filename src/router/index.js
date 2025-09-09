@@ -25,7 +25,7 @@ const routes = [
         name: 'historico-mensal',
         component: HistoricoMensal,
         props: (route) => ({
-          apiBase: import.meta.env.VITE_API_BASE || 'http://localhost:3000',
+          apiBase: (import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''), // remove / final
           userId: Number(route.params.id),
           order: 'desc',
         }),

@@ -1,7 +1,7 @@
 // src/services/api.js
 // Service fino para JSON Server com fetch + helpers de embed/expand
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
+export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '') // remove / final
 
 const DEFAULT_HEADERS = { 'Content-Type': 'application/json' }
 
