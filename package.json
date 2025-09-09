@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev:web": "vite",
     "dev:api": "json-server --watch db.json --port 3000 --routes routes.json --delay 300",
     "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
+    "start": "json-server --watch db.json --host 0.0.0.0 --port $PORT --routes routes.json --delay 300",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
