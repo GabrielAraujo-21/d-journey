@@ -2,34 +2,34 @@ services:
   # 1) API MOCK (json-server)
   - type: web
     name: d-journey-api
-    env: node
+    runtime: node            # antes era env: node
     plan: free
     branch: main
-    autoDeploy: true
+    autoDeployTrigger: commit
     buildCommand: npm ci
-    startCommand: npm start
+    startCommand: npm start  # seu package.json já tem "json-server ... --host 0.0.0.0 --port $PORT ..."
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
         value: 20
-    # Persistência opcional (paga):
+    # Persistência (pago) — opcional:
     # disk:
     #   name: data
     #   mountPath: /data
     #   sizeGB: 1
-    # Se usar disco, ajuste o start para /data/db.json no package.json.
 
   # 2) FRONT-END (Vite SPA)
-  - type: static
+  - type: web
     name: d-journey-web
+    runtime: static          # <-- chave para Static Site
     plan: free
     branch: main
-    autoDeploy: true
+    autoDeployTrigger: commit
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    staticPublishPath: dist  # obrigatório para static sites
     envVars:
       - key: VITE_API_URL
-        value: https://d-journey-api.onrender.com # placeholder; ajuste ao nome real gerado
+        value: https://d-journey-api.onrender.com  # ajuste após criar a API, se o subdomínio mudar
     routes:
       - type: rewrite
         source: /.*
