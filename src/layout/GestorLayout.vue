@@ -113,6 +113,95 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useTheme } from 'vuetify'
+import { http } from '@/services/api' // ⟵ usa dev/prod automaticamente
+
+const theme = useTheme()
+const userStore = useUserStore()
+const route = useRoute()
+
+const DEFAULT_AVATAR = '/sem-imagem.png'
+
+const loading = ref(false)
+const error = ref('')
+const search = ref('')
+
+const team = ref([]) // usuários subordinados ao gestor (managerId = gestor.id)
+
+/* Helpers de API via http (sem fetch direto) */
+async function fetchUserById(id) {
+  return await http.get(`/users/${id}`)
+}
+async function fetchTeamByManager(managerId) {
+  return await http.get('/users', {
+    search: { managerId, _sort: 'name', _order: 'asc' },
+  })
+}
+
+/* Garantir que o gestor está carregado no store (após refresh, por exemplo) */
+async function ensureManagerLoaded() {
+  const paramId = Number(route.params.id)
+  if (!userStore.isLoggedIn || userStore.id !== paramId) {
+    const u = await fetchUserById(paramId)
+    userStore.setUser(u)
+  }
+}
+
+/* Carregar equipe */
+async function reloadTeam() {
+  loading.value = true
+  error.value = ''
+  try {
+    await ensureManagerLoaded()
+    const managerId = userStore.id
+    const arr = await fetchTeamByManager(managerId)
+    team.value = Array.isArray(arr) ? arr : []
+    theme.change(userStore.themeColor)
+  } catch (e) {
+    error.value = e?.message || 'Não foi possível carregar a equipe.'
+  } finally {
+    loading.value = false
+  }
+}
+
+/* Computeds para header do gestor */
+const managerName = computed(() => userStore.name || 'Gestor')
+const managerEmail = computed(() => userStore.email || 'email@empresa.com')
+const managerAvatar = computed(() =>
+  userStore.avatarUrl ? `/${userStore.avatarUrl}` : DEFAULT_AVATAR,
+)
+
+/* Avatar do usuário da lista */
+function userAvatar(u) {
+  return u?.avatarUrl ? `/${u.avatarUrl}` : DEFAULT_AVATAR
+}
+
+/* Filtro local por nome/e-mail */
+const filteredUsers = computed(() => {
+  const q = (search.value || '').toLowerCase().trim()
+  if (!q) return team.value
+  return team.value.filter((u) => {
+    const name = String(u.name || '').toLowerCase()
+    const email = String(u.email || '').toLowerCase()
+    return name.includes(q) || email.includes(q)
+  })
+})
+
+onMounted(reloadTeam)
+watch(
+  () => route.params.id,
+  async () => {
+    await reloadTeam()
+  },
+)
+
+const links = ['Dashboard', 'Messages', 'Profile', 'Updates']
+</script>
+
+<!-- <script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { useTheme } from 'vuetify'
 const theme = useTheme()
 
 const userStore = useUserStore()
@@ -204,4 +293,4 @@ watch(
   },
 )
 const links = ['Dashboard', 'Messages', 'Profile', 'Updates']
-</script>
+</script> -->

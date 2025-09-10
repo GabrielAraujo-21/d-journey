@@ -93,14 +93,14 @@ import {
   dateISOAtWeekOffset,
   isCrossMidnight,
   pairMinutes, // mantém assinatura original
-  // pairMinutesTz,   // se quiser, pode usar essa e passar o iso do dia
+  // pairMinutesTz, // opcional: versão com TZ
   formatMinutes,
 } from '@/plugins/dates'
 
 import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
 
-/* Configurações (mantidas) */
+/* Configurações (mantidas). Em produção, o store usa localStorage; apiBase é irrelevante. */
 const startOnMonday = true
 const props = defineProps({
   targetDailyMinutes: { type: Number, default: 480 },
@@ -114,7 +114,7 @@ const baseUrl = computed(() => props.apiBase.replace(/\/$/, ''))
 const currentDate = ref(todayISO())
 const weeksToShow = ref(6)
 
-/* Store de registros */
+/* Store de registros (usa http unificado por baixo) */
 const reg = useRegistrosStore()
 reg.init({ userId: props.userId, apiBase: baseUrl.value })
 
@@ -137,7 +137,6 @@ const pairs = computed({
 
 /* ===== AÇÕES/UX (mesma lógica; agora via store helpers) ===== */
 async function addPair() {
-  // inclusão não persiste (mantém UX atual)
   reg.addPair(currentDate.value, { in: '', out: '' })
   await reg.persist(currentDate.value)
 }
@@ -160,7 +159,7 @@ function clearDay() {
 async function clearAll() {
   if (!confirm('Tem certeza que deseja apagar todos os registros?')) return
   try {
-    await reg.clearAllFromServer()
+    await reg.clearAllFromServer() // em prod, limpa do localStorage
   } finally {
     reg.clearCache()
     reg.setPairs(currentDate.value, [])
@@ -175,6 +174,7 @@ async function persistOnBlur() {
     console.error('Falha ao persistir marcação:', e)
   }
 }
+
 /* ===== Validações (iguais) ===== */
 const incompleteCount = computed(() => pairs.value.filter((p) => !(p.in && p.out)).length)
 const invalidCount = computed(
@@ -257,7 +257,6 @@ const weeklyHistory = computed(() => {
 
 /* Pré-carrega faixa do histórico semanal */
 async function preloadWeeksRange() {
-  // const baseStart = getWeekStart(new Date())
   const baseStart = getWeekStart(currentDate.value)
   const start = addDays(baseStart, -7 * (weeksToShow.value - 1))
   const end = addDays(baseStart, 6)

@@ -46,15 +46,12 @@
             loading="eager"
             fetchpriority="high"
           />
-
-          <!-- <span>d</span><span class="hifem">-</span
-          ><span class="font-weight-light journey">journey</span> -->
         </v-app-bar-title>
 
         <v-divider class="mx-3 align-self-center" length="24" thickness="2" vertical></v-divider>
 
         <template #append>
-          <!-- Redireciona primeiro; limpa depois -->
+          <!-- UX: primeiro navega pra login, depois limpa store/localStorage -->
           <v-btn icon="mdi-logout" @click="goLogout"></v-btn>
         </template>
       </v-app-bar>
@@ -94,14 +91,18 @@ const items = [
 
 const drawer = ref(null)
 
-// aplica o tema salvo do usuário ao montar / reidratar
+/**
+ * Reidrata o usuário salvo (após refresh direto na rota)
+ * e aplica o tema persistido.
+ */
 onMounted(() => {
+  userStore.bootstrap()
   if (userStore.themeColor) {
     theme.change(userStore.themeColor)
   }
 })
 
-// reflete mudanças de tema vindas da store
+/** Reflete mudanças de tema vindas da store */
 watchEffect(() => {
   if (userStore.themeColor) {
     theme.change(userStore.themeColor)
@@ -113,7 +114,7 @@ watchEffect(() => {
  * depois limpa a store/localStorage.
  */
 async function goLogout() {
-  await router.replace({ name: 'Login' }) // ou { path: '/' }
+  await router.replace({ name: 'Login' })
   userStore.clear()
 }
 </script>

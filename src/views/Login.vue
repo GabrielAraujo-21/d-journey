@@ -223,8 +223,6 @@ async function onSubmit() {
 
     // Mantemos sua store como está (sem mudar shape)
     user.setUser(u)
-    console.log('u', u)
-    console.log('user', user)
 
     // Altera o tema do usuário.
     theme.change(user.themeColor || 'dark')
