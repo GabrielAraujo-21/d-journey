@@ -1,23 +1,24 @@
 <template>
-  <v-card class="mx-auto my-5 pa-5" elevation="10" rounded="xl" max-width="980">
-    <div class="d-flex align-center mb-4">
-      <v-avatar size="40" class="mr-3" color="primary" rounded="lg">
-        <v-icon>mdi-calendar-clock</v-icon>
-      </v-avatar>
-      <div>
-        <h2 class="text-h6 font-weight-bold mb-0">Histórico mensal</h2>
-        <div class="text-caption text-medium-emphasis text-secondary">
-          Último mês fechado e mês atual (marcações diárias)
+  <div class="bg-surface-variant pa-7">
+    <v-card class="mx-auto my-5 pa-7" elevation="10" rounded="xl" max-width="980">
+      <div class="d-flex align-center mb-4">
+        <v-avatar size="40" class="mr-3" color="primary" rounded="lg">
+          <v-icon>mdi-calendar-clock</v-icon>
+        </v-avatar>
+        <div>
+          <h2 class="text-h6 font-weight-bold mb-0">Histórico mensal</h2>
+          <div class="text-caption text-medium-emphasis text-secondary">
+            Último mês fechado e mês atual (marcações diárias)
+          </div>
         </div>
+        <v-spacer />
+        <v-chip class="mr-2" variant="tonal" prepend-icon="mdi-account-clock" color="primary">
+          ID: #{{ userStore.id }} - Nome: {{ userStore.name }}
+        </v-chip>
+        <v-chip variant="tonal" color="secondary" prepend-icon="mdi-cloud-sync"> API </v-chip>
       </div>
-      <v-spacer />
-      <v-chip class="mr-2" variant="tonal" prepend-icon="mdi-account-clock" color="primary">
-        ID: #{{ userStore.id }} - Nome: {{ userStore.name }}
-      </v-chip>
-      <v-chip variant="tonal" color="secondary" prepend-icon="mdi-cloud-sync"> API </v-chip>
-    </div>
 
-    <!-- <v-alert
+      <!-- <v-alert
       v-if="!apiBase"
       type="error"
       variant="tonal"
@@ -25,173 +26,174 @@
       text="É necessário informar a prop 'apiBase' (ex.: http://localhost:3000)."
     /> -->
 
-    <v-tabs v-model="tab" class="mb-3">
-      <v-tab value="atual">
-        <v-icon start>mdi-calendar-month</v-icon>
-        {{ labelMesAtual }}
-      </v-tab>
-      <v-tab value="anterior">
-        <v-icon start>mdi-calendar-month-outline</v-icon>
-        {{ labelMesAnterior }}
-      </v-tab>
-    </v-tabs>
+      <v-tabs v-model="tab" class="mb-3">
+        <v-tab value="atual">
+          <v-icon start>mdi-calendar-month</v-icon>
+          {{ labelMesAtual }}
+        </v-tab>
+        <v-tab value="anterior">
+          <v-icon start>mdi-calendar-month-outline</v-icon>
+          {{ labelMesAnterior }}
+        </v-tab>
+      </v-tabs>
 
-    <v-window v-model="tab">
-      <!-- MÊS ATUAL -->
-      <v-window-item value="atual">
-        <v-sheet border rounded="xl" class="pa-4">
-          <div class="d-flex flex-wrap align-center mb-3">
-            <h3 class="text-subtitle-1 font-weight-medium mb-0">
-              {{ labelMesAtual }} — {{ periodoAtual }}
-            </h3>
-            <v-spacer />
-            <v-chip variant="flat" color="primary" class="mr-2" prepend-icon="mdi-timer-sand">
-              Total: {{ formatMinutes(stateAtual.total) }}
-            </v-chip>
-            <v-chip variant="tonal" prepend-icon="mdi-briefcase-check">
-              Dias trabalhados: {{ stateAtual.daysWorked }} / {{ stateAtual.days.length }}
-            </v-chip>
-          </div>
+      <v-window v-model="tab">
+        <!-- MÊS ATUAL -->
+        <v-window-item value="atual">
+          <v-sheet border rounded="xl" class="pa-4">
+            <div class="d-flex flex-wrap align-center mb-3">
+              <h3 class="text-subtitle-1 font-weight-medium mb-0">
+                {{ labelMesAtual }} — {{ periodoAtual }}
+              </h3>
+              <v-spacer />
+              <v-chip variant="flat" color="primary" class="mr-2" prepend-icon="mdi-timer-sand">
+                Total: {{ formatMinutes(stateAtual.total) }}
+              </v-chip>
+              <v-chip variant="tonal" prepend-icon="mdi-briefcase-check">
+                Dias trabalhados: {{ stateAtual.daysWorked }} / {{ stateAtual.days.length }}
+              </v-chip>
+            </div>
 
-          <v-skeleton-loader
-            v-if="loadingAtual"
-            type="list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line"
-          />
-
-          <template v-else>
-            <v-alert
-              v-if="errorAtual"
-              type="error"
-              variant="tonal"
-              class="mb-3"
-              :text="errorAtual"
+            <v-skeleton-loader
+              v-if="loadingAtual"
+              type="list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line"
             />
-            <v-alert
-              v-else-if="stateAtual.days.length === 0"
-              type="info"
-              variant="tonal"
-              class="mb-3"
-              text="Sem dias neste período."
-            />
-            <v-expansion-panels multiple>
-              <v-expansion-panel v-for="d in stateAtual.days" :key="d.iso" rounded="lg">
-                <v-expansion-panel-title>
-                  <div class="w-100 d-flex align-center">
-                    <div class="text-body-1 font-weight-medium">
-                      {{ d.weekday }}, {{ d.dateLabel }}
+
+            <template v-else>
+              <v-alert
+                v-if="errorAtual"
+                type="error"
+                variant="tonal"
+                class="mb-3"
+                :text="errorAtual"
+              />
+              <v-alert
+                v-else-if="stateAtual.days.length === 0"
+                type="info"
+                variant="tonal"
+                class="mb-3"
+                text="Sem dias neste período."
+              />
+              <v-expansion-panels multiple>
+                <v-expansion-panel v-for="d in stateAtual.days" :key="d.iso" rounded="lg">
+                  <v-expansion-panel-title>
+                    <div class="w-100 d-flex align-center">
+                      <div class="text-body-1 font-weight-medium">
+                        {{ d.weekday }}, {{ d.dateLabel }}
+                      </div>
+                      <v-spacer />
+                      <v-chip size="small" variant="tonal" class="mr-2">
+                        {{ d.pairsCount }} {{ d.pairsCount === 1 ? 'par' : 'pares' }}
+                      </v-chip>
+                      <v-chip size="small" color="primary" variant="flat">
+                        {{ formatMinutes(d.total) }}
+                      </v-chip>
                     </div>
-                    <v-spacer />
-                    <v-chip size="small" variant="tonal" class="mr-2">
-                      {{ d.pairsCount }} {{ d.pairsCount === 1 ? 'par' : 'pares' }}
-                    </v-chip>
-                    <v-chip size="small" color="primary" variant="flat">
-                      {{ formatMinutes(d.total) }}
-                    </v-chip>
-                  </div>
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <div v-if="d.pairsCount === 0" class="text-medium-emphasis">Sem marcações.</div>
-                  <v-row v-else class="gap-y-2">
-                    <v-col v-for="(p, i) in d.pares" :key="i" cols="12" sm="6" md="4">
-                      <v-card variant="tonal" rounded="lg" class="pa-3">
-                        <div class="d-flex align-center">
-                          <v-icon class="mr-2">mdi-login-variant</v-icon>
-                          <span class="mr-4">{{ p.in }}</span>
-                          <v-icon class="mr-2">mdi-logout-variant</v-icon>
-                          <span>{{ p.out }}</span>
-                          <v-spacer />
-                          <v-chip size="x-small" variant="tonal">
-                            {{ formatMinutes(pairMinutes(p)) }}
-                          </v-chip>
-                        </div>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
-          </template>
-        </v-sheet>
-      </v-window-item>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <div v-if="d.pairsCount === 0" class="text-medium-emphasis">Sem marcações.</div>
+                    <v-row v-else class="gap-y-2">
+                      <v-col v-for="(p, i) in d.pares" :key="i" cols="12" sm="6" md="4">
+                        <v-card variant="tonal" rounded="lg" class="pa-3">
+                          <div class="d-flex align-center">
+                            <v-icon class="mr-2">mdi-login-variant</v-icon>
+                            <span class="mr-4">{{ p.in }}</span>
+                            <v-icon class="mr-2">mdi-logout-variant</v-icon>
+                            <span>{{ p.out }}</span>
+                            <v-spacer />
+                            <v-chip size="x-small" variant="tonal">
+                              {{ formatMinutes(pairMinutes(p)) }}
+                            </v-chip>
+                          </div>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </template>
+          </v-sheet>
+        </v-window-item>
 
-      <!-- MÊS ANTERIOR (FECHADO) -->
-      <v-window-item value="anterior">
-        <v-sheet border rounded="xl" class="pa-4">
-          <div class="d-flex flex-wrap align-center mb-3">
-            <h3 class="text-subtitle-1 font-weight-medium mb-0">
-              {{ labelMesAnterior }} — {{ periodoAnterior }}
-            </h3>
-            <v-spacer />
-            <v-chip variant="flat" color="primary" class="mr-2" prepend-icon="mdi-timer-sand">
-              Total: {{ formatMinutes(stateAnterior.total) }}
-            </v-chip>
-            <v-chip variant="tonal" prepend-icon="mdi-briefcase-check">
-              Dias trabalhados: {{ stateAnterior.daysWorked }} / {{ stateAnterior.days.length }}
-            </v-chip>
-          </div>
+        <!-- MÊS ANTERIOR (FECHADO) -->
+        <v-window-item value="anterior">
+          <v-sheet border rounded="xl" class="pa-4">
+            <div class="d-flex flex-wrap align-center mb-3">
+              <h3 class="text-subtitle-1 font-weight-medium mb-0">
+                {{ labelMesAnterior }} — {{ periodoAnterior }}
+              </h3>
+              <v-spacer />
+              <v-chip variant="flat" color="primary" class="mr-2" prepend-icon="mdi-timer-sand">
+                Total: {{ formatMinutes(stateAnterior.total) }}
+              </v-chip>
+              <v-chip variant="tonal" prepend-icon="mdi-briefcase-check">
+                Dias trabalhados: {{ stateAnterior.daysWorked }} / {{ stateAnterior.days.length }}
+              </v-chip>
+            </div>
 
-          <v-skeleton-loader
-            v-if="loadingAnterior"
-            type="list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line"
-          />
-
-          <template v-else>
-            <v-alert
-              v-if="errorAnterior"
-              type="error"
-              variant="tonal"
-              class="mb-3"
-              :text="errorAnterior"
+            <v-skeleton-loader
+              v-if="loadingAnterior"
+              type="list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line, list-item-two-line"
             />
-            <v-alert
-              v-else-if="stateAnterior.days.length === 0"
-              type="info"
-              variant="tonal"
-              class="mb-3"
-              text="Sem dias neste período."
-            />
-            <v-expansion-panels multiple>
-              <v-expansion-panel v-for="d in stateAnterior.days" :key="d.iso" rounded="lg">
-                <v-expansion-panel-title>
-                  <div class="w-100 d-flex align-center">
-                    <div class="text-body-1 font-weight-medium">
-                      {{ d.weekday }}, {{ d.dateLabel }}
+
+            <template v-else>
+              <v-alert
+                v-if="errorAnterior"
+                type="error"
+                variant="tonal"
+                class="mb-3"
+                :text="errorAnterior"
+              />
+              <v-alert
+                v-else-if="stateAnterior.days.length === 0"
+                type="info"
+                variant="tonal"
+                class="mb-3"
+                text="Sem dias neste período."
+              />
+              <v-expansion-panels multiple>
+                <v-expansion-panel v-for="d in stateAnterior.days" :key="d.iso" rounded="lg">
+                  <v-expansion-panel-title>
+                    <div class="w-100 d-flex align-center">
+                      <div class="text-body-1 font-weight-medium">
+                        {{ d.weekday }}, {{ d.dateLabel }}
+                      </div>
+                      <v-spacer />
+                      <v-chip size="small" variant="tonal" class="mr-2">
+                        {{ d.pairsCount }} {{ d.pairsCount === 1 ? 'par' : 'pares' }}
+                      </v-chip>
+                      <v-chip size="small" color="primary" variant="flat">
+                        {{ formatMinutes(d.total) }}
+                      </v-chip>
                     </div>
-                    <v-spacer />
-                    <v-chip size="small" variant="tonal" class="mr-2">
-                      {{ d.pairsCount }} {{ d.pairsCount === 1 ? 'par' : 'pares' }}
-                    </v-chip>
-                    <v-chip size="small" color="primary" variant="flat">
-                      {{ formatMinutes(d.total) }}
-                    </v-chip>
-                  </div>
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <div v-if="d.pairsCount === 0" class="text-medium-emphasis">Sem marcações.</div>
-                  <v-row v-else class="gap-y-2">
-                    <v-col v-for="(p, i) in d.pares" :key="i" cols="12" sm="6" md="4">
-                      <v-card variant="tonal" rounded="lg" class="pa-3">
-                        <div class="d-flex align-center">
-                          <v-icon class="mr-2">mdi-login-variant</v-icon>
-                          <span class="mr-4">{{ p.in }}</span>
-                          <v-icon class="mr-2">mdi-logout-variant</v-icon>
-                          <span>{{ p.out }}</span>
-                          <v-spacer />
-                          <v-chip size="x-small" variant="tonal">
-                            {{ formatMinutes(pairMinutes(p)) }}
-                          </v-chip>
-                        </div>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
-          </template>
-        </v-sheet>
-      </v-window-item>
-    </v-window>
-  </v-card>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <div v-if="d.pairsCount === 0" class="text-medium-emphasis">Sem marcações.</div>
+                    <v-row v-else class="gap-y-2">
+                      <v-col v-for="(p, i) in d.pares" :key="i" cols="12" sm="6" md="4">
+                        <v-card variant="tonal" rounded="lg" class="pa-3">
+                          <div class="d-flex align-center">
+                            <v-icon class="mr-2">mdi-login-variant</v-icon>
+                            <span class="mr-4">{{ p.in }}</span>
+                            <v-icon class="mr-2">mdi-logout-variant</v-icon>
+                            <span>{{ p.out }}</span>
+                            <v-spacer />
+                            <v-chip size="x-small" variant="tonal">
+                              {{ formatMinutes(pairMinutes(p)) }}
+                            </v-chip>
+                          </div>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </template>
+          </v-sheet>
+        </v-window-item>
+      </v-window>
+    </v-card>
+  </div>
 </template>
 
 <script setup>
@@ -218,7 +220,7 @@ const baseUrl = computed(() => {
     .replace(/\/$/, '')
 })
 
-const apiBase = computed(() => props.apiBase?.replace(/\/$/, '') || '')
+// const apiBase = computed(() => props.apiBase?.replace(/\/$/, '') || '')
 const tab = ref('atual')
 
 // Datas base (mantidas)

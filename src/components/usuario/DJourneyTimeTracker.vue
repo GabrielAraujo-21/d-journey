@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-surface-variant mb-6">
+  <div class="bg-surface-variant pa-7">
     <!-- <v-container> -->
     <v-row>
       <v-col cols="12" md="6">
@@ -36,7 +36,7 @@
             :nowHM="nowHM"
             :pairMinutes="pairMinutes"
             :isCrossMidnight="isCrossMidnight"
-            :isInvalid="isInvalid"
+            :isInvalid="isInvalid"7
             :invalidMessage="invalidMessage"
             :formatMinutes="formatMinutes"
             :addPair="addPair"
