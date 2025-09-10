@@ -1,3 +1,4 @@
+// src/stores/registros.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
@@ -5,9 +6,9 @@ export const useRegistrosStore = defineStore('registros', () => {
   const apiBase = ref('http://localhost:3000') // sem barra final
   const userId = ref(null)
 
-  // cache local: { 'YYYY-MM-DD': [ { in, out }, ... ] }
+  // cache local indexado por ISO do dia: { 'YYYY-MM-DD': [ { in, out }, ... ] }
   const entries = ref({})
-  // id por dia: { 'YYYY-MM-DD': 'u1-2025-09-08' | 123 }
+  // mapeia ISO -> id do registro no backend (numérico OU string)
   const idByDate = ref({})
 
   // fila de escrita por chave (userId|data) para serializar updates
@@ -18,7 +19,7 @@ export const useRegistrosStore = defineStore('registros', () => {
     if (base) apiBase.value = String(base).replace(/\/$/, '')
   }
 
-  /* ========= Utils ========= */
+  /* ========= Utils (locais, mantidos) ========= */
   function toISODate(d) {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -76,9 +77,12 @@ export const useRegistrosStore = defineStore('registros', () => {
     return Math.max(0, diff)
   }
 
-  // id determinístico para novos dias
+  // ========= ID determinístico para NOVOS dias =========
+  // Alinhado ao padrão combinado: "YYYYMMDD-<userId>"
+  // Ex.: iso "2025-09-09", uid 1 -> "20250909-1"
   function recordId(uid, iso) {
-    return `u${uid}-${iso}`
+    const ymd = String(iso).replaceAll('-', '')
+    return `${ymd}-${uid}`
   }
 
   /* ========= Derivados ========= */
@@ -103,16 +107,18 @@ export const useRegistrosStore = defineStore('registros', () => {
   }
 
   /* ========= Remoto (leitura) ========= */
+  // Busca por (userId,data) para funcionar com IDs numéricos antigos e strings novas
   async function fetchDay(iso) {
-    // Busca por (userId,data) para compat com registros antigos (id numérico)
-    const url = `${apiBase.value}/registros?userId=${encodeURIComponent(userId.value)}&data=${encodeURIComponent(iso)}&_limit=1`
+    const url = `${apiBase.value}/registros?userId=${encodeURIComponent(
+      userId.value,
+    )}&data=${encodeURIComponent(iso)}&_limit=1`
     const arr = await _json(url)
     if (Array.isArray(arr) && arr.length) {
       const it = arr[0]
       return {
         pairs: Array.isArray(it.pares) ? it.pares : [],
-        id: it.id, // pode ser número ou string
-        createdAt: it.createdAt, // se existir
+        id: it.id, // número ou string
+        createdAt: it.createdAt ?? null,
       }
     }
     return { pairs: [], id: null, createdAt: null }
@@ -152,7 +158,7 @@ export const useRegistrosStore = defineStore('registros', () => {
 
   /* ========= Remoto (gravação) com fila e ID determinístico ========= */
 
-  // Serializa operações por chave
+  // Serializa operações por chave (evita corrida de PATCH/PUT no mesmo dia)
   function enqueue(key, op) {
     const prev = writeQueues.get(key) || Promise.resolve()
     const next = prev.then(op).finally(() => {
@@ -182,11 +188,24 @@ export const useRegistrosStore = defineStore('registros', () => {
 
       // Caso 2: não existe -> cria com ID determinístico por (userId,data) via PUT
       const newId = recordId(userId.value, iso)
-      await _json(`${apiBase.value}/registros/${encodeURIComponent(newId)}`, {
-        method: 'PUT',
+      // await _json(`${apiBase.value}/registros/${encodeURIComponent(newId)}`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     id: newId,
+      //     userId: userId.value,
+      //     data: iso,
+      //     pares: pairs,
+      //     totalMin,
+      //     createdAt: new Date().toISOString(),
+      //     updatedAt: new Date().toISOString(),
+      //   }),
+      // })
+      await _json(`${apiBase.value}/registros`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: newId,
+          id: newId,                 // mantém id string (YYYYMMDD-<userId>)
           userId: userId.value,
           data: iso,
           pares: pairs,
@@ -230,12 +249,18 @@ export const useRegistrosStore = defineStore('registros', () => {
     entries.value = {}
     idByDate.value = {}
   }
+  // Alias p/ compatibilidade com o componente (mesmo efeito do clearAllFromClient)
+  function clearCache() {
+    clearAllFromClient()
+  }
 
   async function clearAllFromServer() {
     const url = `${apiBase.value}/registros?userId=${encodeURIComponent(userId.value)}`
     const arr = await _json(url)
     await Promise.all(
-      arr.map((it) => fetch(`${apiBase.value}/registros/${it.id}`, { method: 'DELETE' })),
+      arr.map((it) =>
+        fetch(`${apiBase.value}/registros/${encodeURIComponent(it.id)}`, { method: 'DELETE' }),
+      ),
     )
     clearAllFromClient()
   }
@@ -275,6 +300,7 @@ export const useRegistrosStore = defineStore('registros', () => {
     persist,
     clearAllFromServer,
     clearAllFromClient,
+    clearCache,
 
     // helpers locais
     setPairs,

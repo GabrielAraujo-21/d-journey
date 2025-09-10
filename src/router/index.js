@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
-import Usuario from '@/layout/Usuario.vue'
-import Admin from '@/layout/Gestor.vue'
+import UsuarioLayout from '@/layout/UsuarioLayout.vue'
+import GestorLayout from '@/layout/GestorLayout.vue'
 import DJourneyTimeTracker from '@/components/usuario/DJourneyTimeTracker.vue'
 import HistoricoMensal from '@/components/usuario/HistoricoMensal.vue'
 import { useUserStore } from '@/stores/user'
@@ -16,8 +16,13 @@ const routes = [
   {
     path: '/user/:id',
     name: 'usuario',
-    component: Usuario,
+    component: UsuarioLayout,
     meta: { requiresAuth: true },
+    props: (route) => ({
+      apiBase: (import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''), // remove / final
+      userId: Number(route.params.id),
+      order: 'desc',
+    }),
     children: [
       { path: '', name: 'djourney', component: DJourneyTimeTracker },
       {
@@ -36,7 +41,7 @@ const routes = [
   {
     path: '/admin/:id',
     name: 'Admins',
-    component: Admin,
+    component: GestorLayout,
     meta: { requiresAuth: true },
   },
 

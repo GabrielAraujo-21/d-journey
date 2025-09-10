@@ -4,7 +4,6 @@
       "id": 1,
       "name": "Gabriel",
       "email": "gabriel@d-journey.local",
-      "password": "123456",
       "PerfilTipoId": 4,
       "escalaId": 1,
       "tipoContratoId": 1,
@@ -17,7 +16,6 @@
       "id": 2,
       "name": "Usuario Gestor",
       "email": "admin@d-journey.local",
-      "password": "admin",
       "PerfilTipoId": 3,
       "escalaId": 1,
       "tipoContratoId": 1,
@@ -30,7 +28,6 @@
       "id": 3,
       "name": "Peter Lowerfield",
       "email": "peter@d-journey.local",
-      "password": "123456",
       "PerfilTipoId": 3,
       "escalaId": 1,
       "tipoContratoId": 1,
@@ -101,7 +98,7 @@
   ],
   "registros": [
     {
-      "id": 1,
+      "id": "20250901-1",
       "userId": 1,
       "data": "2025-09-01",
       "pares": [
@@ -119,7 +116,7 @@
       "updatedAt": "2025-09-01T18:10:00.000Z"
     },
     {
-      "id": 2,
+      "id": "20250902-1",
       "userId": 1,
       "data": "2025-09-02",
       "pares": [
@@ -137,7 +134,7 @@
       "updatedAt": "2025-09-02T18:10:00.000Z"
     },
     {
-      "id": 3,
+      "id": "20250903-1",
       "userId": 1,
       "data": "2025-09-03",
       "pares": [
@@ -155,7 +152,7 @@
       "updatedAt": "2025-09-03T18:10:00.000Z"
     },
     {
-      "id": 4,
+      "id": "20250904-1",
       "userId": 1,
       "data": "2025-09-04",
       "pares": [
@@ -173,7 +170,7 @@
       "updatedAt": "2025-09-04T18:10:00.000Z"
     },
     {
-      "id": 5,
+      "id": "20250905-1",
       "userId": 1,
       "data": "2025-09-05",
       "pares": [
@@ -191,7 +188,7 @@
       "updatedAt": "2025-09-06T00:52:35.895Z"
     },
     {
-      "id": 6,
+      "id": "20250907-1",
       "userId": 1,
       "data": "2025-09-07",
       "pares": [
@@ -205,7 +202,7 @@
       "updatedAt": "2025-09-07T18:10:00.000Z"
     },
     {
-      "id": 7,
+      "id": "20250901-2",
       "userId": 2,
       "data": "2025-09-01",
       "pares": [
@@ -227,7 +224,7 @@
       "updatedAt": "2025-09-01T18:10:00.000Z"
     },
     {
-      "id": 8,
+      "id": "20250902-2",
       "userId": 2,
       "data": "2025-09-02",
       "pares": [
@@ -241,7 +238,7 @@
       "updatedAt": "2025-09-02T18:10:00.000Z"
     },
     {
-      "id": 9,
+      "id": "20250903-2",
       "userId": 2,
       "data": "2025-09-03",
       "pares": [
@@ -259,7 +256,7 @@
       "updatedAt": "2025-09-03T18:10:00.000Z"
     },
     {
-      "id": 10,
+      "id": "20250905-2",
       "userId": 2,
       "data": "2025-09-05",
       "pares": [
@@ -273,6 +270,7 @@
       "updatedAt": "2025-09-05T18:10:00.000Z"
     },
     {
+      "id": "20250906-1",
       "userId": 1,
       "data": "2025-09-06",
       "pares": [
@@ -283,22 +281,35 @@
       ],
       "totalMin": 23,
       "createdAt": "2025-09-06T03:37:27.629Z",
-      "updatedAt": "2025-09-06T12:01:09.503Z",
-      "id": 11
+      "updatedAt": "2025-09-06T12:01:09.503Z"
     },
     {
+      "id": "20250908-1",
       "userId": 1,
       "data": "2025-09-08",
       "pares": [
         {
-          "in": "",
-          "out": ""
+          "in": "20:00",
+          "out": "20:29"
         }
       ],
-      "totalMin": 0,
+      "totalMin": 29,
       "createdAt": "2025-09-09T01:27:14.055Z",
-      "updatedAt": "2025-09-09T01:49:39.014Z",
-      "id": 12
+      "updatedAt": "2025-09-09T23:29:17.439Z"
+    },
+    {
+      "id": "20250909-1",
+      "userId": 1,
+      "data": "2025-09-09",
+      "pares": [
+        {
+          "in": "19:39",
+          "out": "20:39"
+        }
+      ],
+      "totalMin": 60,
+      "createdAt": "2025-09-09T23:39:17.513Z",
+      "updatedAt": "2025-09-09T23:39:40.764Z"
     }
   ],
   "tipoContratos": [

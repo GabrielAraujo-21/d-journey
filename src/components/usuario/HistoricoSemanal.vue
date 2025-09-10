@@ -1,7 +1,7 @@
 <template>
   <!-- Histórico semanal (últimas N semanas) -->
-  <div class="d-flex align-center mt-8 mb-3">
-    <h3 class="text-subtitle-1 font-weight-medium mb-0">Histórico semanal</h3>
+  <div class="d-flex align-center mb-3">
+    <h2 class="text-h6 font-weight-bold mb-0">Histórico semanal</h2>
     <v-spacer />
     <v-select
       v-model="weeksToShowModel"

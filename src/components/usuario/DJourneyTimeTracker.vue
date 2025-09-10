@@ -10,7 +10,7 @@
               </v-avatar>
               <div>
                 <h2 class="text-h6 font-weight-bold mb-0">Jornada de trabalho</h2>
-                <div class="text-caption text-medium-emphasis">
+                <div class="text-caption text-medium-emphasis text-secondary">
                   Registre pares de entrada/saída por dia
                 </div>
               </div>
@@ -81,6 +81,24 @@ import HistoricoSemanal from '@/components/usuario/HistoricoSemanal.vue'
 import SelecaoDiaria from '@/components/usuario/SelecaoDiaria.vue'
 import SemanaAtual from '@/components/usuario/SemanaAtual.vue'
 import { useRegistrosStore } from '@/stores/registros'
+import {
+  todayISO,
+  toISODate,
+  toMinutes,
+  nowHM,
+  addDays,
+  getWeekStart,
+  weekLabel,
+  formatShort,
+  dateISOAtWeekOffset,
+  isCrossMidnight,
+  pairMinutes, // mantém assinatura original
+  // pairMinutesTz,   // se quiser, pode usar essa e passar o iso do dia
+  formatMinutes,
+} from '@/plugins/dates'
+
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
 
 /* Configurações (mantidas) */
 const startOnMonday = true
@@ -93,8 +111,7 @@ const targetDailyMinutes = computed(() => props.targetDailyMinutes)
 const baseUrl = computed(() => props.apiBase.replace(/\/$/, ''))
 
 /* Estado base (mantido) */
-const todayISO = toISODate(new Date())
-const currentDate = ref(todayISO)
+const currentDate = ref(todayISO())
 const weeksToShow = ref(6)
 
 /* Store de registros */
@@ -158,46 +175,6 @@ async function persistOnBlur() {
     console.error('Falha ao persistir marcação:', e)
   }
 }
-
-/* ===== Utilidades de tempo (locais, como antes) ===== */
-function nowHM() {
-  const d = new Date()
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
-}
-function toISODate(d) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-function toMinutes(hm) {
-  if (!hm || !/^\d{2}:\d{2}$/.test(hm)) return NaN
-  const [h, m] = hm.split(':').map(Number)
-  return h * 60 + m
-}
-function pairMinutes(p) {
-  const a = toMinutes(p.in)
-  const b = toMinutes(p.out)
-  if (Number.isNaN(a) || Number.isNaN(b)) return 0
-  let diff = b - a
-  if (diff < 0) diff += 24 * 60
-  return Math.max(0, diff)
-}
-function formatMinutes(mins) {
-  const m = Math.max(0, Math.round(mins || 0))
-  const h = Math.floor(m / 60)
-  const mm = String(m % 60).padStart(2, '0')
-  return `${h}h ${mm}m`
-}
-function isCrossMidnight(p) {
-  const a = toMinutes(p.in)
-  const b = toMinutes(p.out)
-  if (Number.isNaN(a) || Number.isNaN(b)) return false
-  return b - a < 0
-}
-
 /* ===== Validações (iguais) ===== */
 const incompleteCount = computed(() => pairs.value.filter((p) => !(p.in && p.out)).length)
 const invalidCount = computed(
@@ -229,42 +206,17 @@ const dayTotal = computed(() => pairs.value.reduce((acc, p) => acc + pairMinutes
 const progressDaily = computed(() => (dayTotal.value / targetDailyMinutes.value) * 100)
 
 /* ===== Semana/HIST (iguais) ===== */
-function getWeekStart(d) {
-  const tmp = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const day = tmp.getDay() // 0=Dom
-  const diff = startOnMonday ? (day === 0 ? 6 : day - 1) : day
-  tmp.setDate(tmp.getDate() - diff)
-  tmp.setHours(0, 0, 0, 0)
-  return tmp
-}
-function addDays(date, days) {
-  const d = new Date(date)
-  d.setDate(d.getDate() + days)
-  return d
-}
-function weekLabel(start) {
-  const end = addDays(start, 6)
-  return `${formatShort(start)} – ${formatShort(end)}`
-}
-function formatShort(d) {
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  return `${dd}/${mm}`
-}
 function weekdayLabel(idx) {
   const listMon = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
   const listSun = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
   return startOnMonday ? listMon[idx] : listSun[idx]
 }
-function dateISOAtWeekOffset(baseStart, dayIdx) {
-  return toISODate(addDays(baseStart, dayIdx))
-}
 function totalOfDate(iso) {
   const dayPairs = reg.entries[iso] || []
   return dayPairs.reduce((acc, p) => acc + pairMinutes(p), 0)
 }
+const currentWeekStart = computed(() => getWeekStart(currentDate.value))
 
-const currentWeekStart = computed(() => getWeekStart(new Date(currentDate.value)))
 const currentWeek = computed(() => {
   const days = Array.from({ length: 7 }).map((_, i) => {
     const iso = dateISOAtWeekOffset(currentWeekStart.value, i)
@@ -305,7 +257,8 @@ const weeklyHistory = computed(() => {
 
 /* Pré-carrega faixa do histórico semanal */
 async function preloadWeeksRange() {
-  const baseStart = getWeekStart(new Date())
+  // const baseStart = getWeekStart(new Date())
+  const baseStart = getWeekStart(currentDate.value)
   const start = addDays(baseStart, -7 * (weeksToShow.value - 1))
   const end = addDays(baseStart, 6)
   await reg.preloadRange(start, end)
@@ -313,6 +266,19 @@ async function preloadWeeksRange() {
     reg.setPairs(currentDate.value, [])
   }
 }
+
+watch(
+  currentWeekStart,
+  async (start) => {
+    const end = addDays(start, 6)
+    try {
+      await reg.preloadRange(start, end)
+    } catch (e) {
+      console.warn('Falha ao pré-carregar semana:', e)
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>

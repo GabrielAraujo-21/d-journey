@@ -168,7 +168,7 @@ const rules = {
   min: (len) => (v) => String(v || '').length >= len || `Mínimo de ${len} caracteres`,
 }
 
-const canSubmit = computed(() => !state.loading && state.email && state.password)
+// const canSubmit = computed(() => !state.loading && state.email && state.password)
 
 /** Alternância de tema respeitando o atributo themeColor do usuário */
 const toggleTheme = async () => {
@@ -176,10 +176,13 @@ const toggleTheme = async () => {
   if (user.isLoggedIn) {
     if (user.themeColor !== next) {
       user.themeColor = next
+
       // Atualiza também no backend fake (opcional)
       try {
         await patchUser(user.id, { themeColor: next })
-      } catch {}
+      } catch {
+        // não faz nada se falhar
+      }
       // Regrava no localStorage via setUser para manter a persistência
       user.setUser({
         id: user.id,
@@ -191,10 +194,12 @@ const toggleTheme = async () => {
         tipoContratoId: user.tipoContratoId,
         ativo: user.ativo,
         themeColor: next,
+        registros: user.registros,
+        escalas: user.escalas,
       })
     }
   }
-  theme.global.name.value = next
+  theme.change(next)
 }
 
 /**
@@ -216,11 +221,13 @@ async function onSubmit() {
       expand: ['PerfilTipo', 'tipoContrato'], // pais referenciados no user
     })
 
-    // Você terá u.escalas, u.registros, u.PerfilTipo, u.tipoContrato disponíveis aqui
     // Mantemos sua store como está (sem mudar shape)
     user.setUser(u)
+    console.log('u', u)
+    console.log('user', user)
 
-    theme.global.name.value = user.themeColor || 'light'
+    // Altera o tema do usuário.
+    theme.change(user.themeColor || 'dark')
 
     if (u.PerfilTipoId === 3) {
       router.push(`/admin/${targetId}`)
@@ -228,7 +235,7 @@ async function onSubmit() {
       router.push(`/user/${targetId}`)
     }
   } catch (err) {
-    state.error = 'Falha ao autenticar. Tente novamente.'
+    state.error = 'Falha ao autenticar. Tente novamente.' + (err?.message || '')
   } finally {
     state.loading = false
   }

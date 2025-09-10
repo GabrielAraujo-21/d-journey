@@ -8,7 +8,6 @@ const DEFAULT_HEADERS = { 'Content-Type': 'application/json' }
 async function request(path, { method = 'GET', body, headers, search } = {}) {
   const url = new URL(path, API_BASE)
 
-  // Permite repetir _embed e _expand: search: { _embed: ['registros','escalas'], _expand: ['PerfilTipo','tipoContrato'] }
   if (search) {
     Object.entries(search).forEach(([k, v]) => {
       if (Array.isArray(v)) {
@@ -30,7 +29,6 @@ async function request(path, { method = 'GET', body, headers, search } = {}) {
     throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ''}`)
   }
 
-  // JSON Server retorna 204 em alguns casos
   return res.status === 204 ? null : res.json()
 }
 
@@ -38,16 +36,6 @@ async function request(path, { method = 'GET', body, headers, search } = {}) {
    USERS
    =========================== */
 
-/**
- * Busca usuário por ID e opcionalmente traz relacionamentos.
- * - embed: coleções que têm FK para users (ex.: ['registros','escalas'])
- * - expand: entidades referenciadas por FK no user (ex.: ['PerfilTipo','tipoContrato'])
- *
- * Observação: o JSON Server usa:
- *  - _embed=colecao (ex.: registros -> adiciona "registros": [...])
- *  - _expand=recurso (singular do recurso plural); ex.: posts?_expand=user -> adiciona "user": {...}
- *    Aqui usamos nomes exatamente como você escrever (respeitando case), e fazemos fallback manual.
- */
 export async function getUserById(id, { embed = [], expand = [] } = {}) {
   const user = await request(`/users/${id}`, {
     search: {
@@ -56,7 +44,6 @@ export async function getUserById(id, { embed = [], expand = [] } = {}) {
     },
   })
 
-  // Fallback manual caso algum _embed/_expand não volte (diferenças de singular/plural/case).
   const followUps = []
 
   if (embed.includes('registros') && !user.registros) {
@@ -103,8 +90,63 @@ export function patchUser(id, payload) {
    REGISTROS / ESCALAS
    =========================== */
 
+/**
+ * Gera o ID de registro no formato YYYYMMDD-<userId>
+ * Ex.: data "2025-09-01", userId 1 => "20250901-1"
+ */
+export function makeRegistroId(data, userId) {
+  const ymd = String(data ?? '')
+    .slice(0, 10)
+    .replaceAll('-', '')
+  if (!ymd || !userId) throw new Error('makeRegistroId: data e userId são obrigatórios')
+  return `${ymd}-${userId}`
+}
+
 export function getRegistrosByUser(userId, { order = 'desc' } = {}) {
   return request('/registros', { search: { userId, _sort: 'data', _order: order } })
+}
+
+/**
+ * Busca um registro específico pela combinação (userId, data)
+ */
+export function getRegistroByDate(userId, data) {
+  const id = makeRegistroId(data, userId)
+  return request(`/registros/${encodeURIComponent(id)}`)
+}
+
+/**
+ * Salva (cria/atualiza) um registro com ID composto.
+ * - Usa PUT idempotente em /registros/:id
+ * - Se não existir, o json-server cria; se existir, atualiza.
+ *
+ * Exemplo de payload:
+ * {
+ *   userId: 1,
+ *   data: "2025-09-09",
+ *   pares: [{ in: "09:00", out: "12:00" }],
+ *   totalMin: 180,
+ *   createdAt: "...", updatedAt: "..."
+ * }
+ */
+export function saveRegistro(payload) {
+  const { userId, data } = payload || {}
+  const id = makeRegistroId(data, userId)
+  // return request(`/registros/${encodeURIComponent(id)}`, {
+  //   method: 'PUT',
+  //   body: { ...payload, id },
+  // })
+  return request(`/registros`, {
+    method: 'POST',
+    body: { ...payload, id },
+  })
+}
+
+/**
+ * Exclui um registro pela combinação (userId, data)
+ */
+export function deleteRegistroByDate(userId, data) {
+  const id = makeRegistroId(data, userId)
+  return request(`/registros/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 export function getEscalasByUser(userId) {

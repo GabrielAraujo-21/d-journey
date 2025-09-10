@@ -26,17 +26,17 @@
             <template #prepend>
               <v-icon :icon="item.icon"></v-icon>
             </template>
+
             <v-list-item-title v-text="item.text"></v-list-item-title>
           </v-list-item>
         </v-list>
       </v-navigation-drawer>
 
-      <v-app-bar>
+      <v-app-bar permanent>
         <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-        
+
         <v-app-bar-title>
-          
-        <img
+          <img
             class="logo-lg mx-auto"
             :src="logoUrl"
             alt="d-journey"
@@ -97,14 +97,14 @@ const drawer = ref(null)
 // aplica o tema salvo do usuário ao montar / reidratar
 onMounted(() => {
   if (userStore.themeColor) {
-    theme.global.name.value = userStore.themeColor
+    theme.change(userStore.themeColor)
   }
 })
 
 // reflete mudanças de tema vindas da store
 watchEffect(() => {
   if (userStore.themeColor) {
-    theme.global.name.value = userStore.themeColor
+    theme.change(userStore.themeColor)
   }
 })
 

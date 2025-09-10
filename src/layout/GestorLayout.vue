@@ -112,6 +112,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useTheme } from 'vuetify'
+const theme = useTheme()
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -160,6 +162,7 @@ async function reloadTeam() {
     const managerId = userStore.id
     const arr = await fetchTeamByManager(managerId)
     team.value = Array.isArray(arr) ? arr : []
+    theme.change(userStore.themeColor)
   } catch (e) {
     error.value = e?.message || 'Não foi possível carregar a equipe.'
   } finally {

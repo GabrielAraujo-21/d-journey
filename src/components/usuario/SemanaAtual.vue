@@ -1,14 +1,15 @@
 <template>
   <!-- Resumo da semana atual -->
   <div class="d-flex align-center mb-3">
-    <h3 class="text-subtitle-1 font-weight-medium mb-0">
-      Semana atual ({{ weekLabel(currentWeekStart) }})
-    </h3>
+    <h2 class="text-h6 font-weight-bold mb-0">Semana atual ({{ weekLabel(currentWeekStart) }})</h2>
     <v-spacer />
-    <v-chip variant="tonal" class="mr-2">Total: {{ formatMinutes(currentWeek.total) }}</v-chip>
-    <v-chip variant="tonal">Média/dia: {{ formatMinutes(currentWeek.avgPerDay || 0) }}</v-chip>
+    <v-chip variant="tonal" class="mr-2" color="primary"
+      >Total: {{ formatMinutes(currentWeek.total) }}</v-chip
+    >
+    <v-chip variant="tonal" color="primary"
+      >Média/dia: {{ formatMinutes(currentWeek.avgPerDay || 0) }}</v-chip
+    >
   </div>
-
   <v-sheet class="pa-4 rounded-xl week-sheet" border>
     <v-row>
       <v-col v-for="(d, i) in currentWeek.days" :key="i" cols="12" sm="6" md="3" lg="3">
@@ -41,8 +42,6 @@
 </template>
 
 <script setup>
-import { useRegistrosStore } from '@/stores/registros'
-
 const props = defineProps({
   currentWeekStart: { type: Object, required: true }, // Date
   currentWeek: { type: Object, required: true },
