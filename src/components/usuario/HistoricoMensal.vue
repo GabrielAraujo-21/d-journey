@@ -203,13 +203,22 @@ const userStore = useUserStore()
 
 const props = defineProps({
   userId: { type: Number, default: 1 },
-  apiBase: { type: String, required: true, default: 'http://localhost:3000' },
+  apiBase: { type: String, default: 'http://localhost:3000' },
   order: { type: String, default: 'desc', validator: (v) => ['asc', 'desc'].includes(v) },
   startOnMonday: { type: Boolean, default: true },
 })
 
-const userId = props.userId
-const apiBase = computed(() => props.apiBase?.replace(/\/$/, ''))
+const baseUrl = computed(() => {
+  if (import.meta.env.MODE === 'production') return '' // ignorado no modo localStorage
+  return (
+    import.meta.env.VITE_API_URL || // .env.development
+    props.apiBase || // fallback por prop
+    'http://localhost:3000'
+  ) // fallback final
+    .replace(/\/$/, '')
+})
+
+const apiBase = computed(() => props.apiBase?.replace(/\/$/, '') || '')
 const tab = ref('atual')
 
 // Datas base (mantidas)
@@ -233,7 +242,7 @@ const errorAnterior = ref('')
 
 // Store de registros (só para buscar a faixa e reaproveitar cache se quiser)
 const reg = useRegistrosStore()
-reg.init({ userId, apiBase: apiBase.value })
+reg.init({ userId: props.userId, apiBase: baseUrl.value })
 
 onMounted(async () => {
   if (!apiBase.value) return
