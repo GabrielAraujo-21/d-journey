@@ -17,13 +17,13 @@
       <v-chip variant="tonal" color="secondary" prepend-icon="mdi-cloud-sync"> API </v-chip>
     </div>
 
-    <v-alert
+    <!-- <v-alert
       v-if="!apiBase"
       type="error"
       variant="tonal"
       class="mb-4"
       text="É necessário informar a prop 'apiBase' (ex.: http://localhost:3000)."
-    />
+    /> -->
 
     <v-tabs v-model="tab" class="mb-3">
       <v-tab value="atual">
@@ -245,7 +245,7 @@ const reg = useRegistrosStore()
 reg.init({ userId: props.userId, apiBase: baseUrl.value })
 
 onMounted(async () => {
-  if (!apiBase.value) return
+  // if (!apiBase.value) return
   loadingAtual.value = true
   loadingAnterior.value = true
   errorAtual.value = ''

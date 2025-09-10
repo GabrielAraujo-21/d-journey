@@ -1,75 +1,75 @@
 <template>
   <div class="bg-surface-variant mb-6">
-    <v-container>
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-card class="mx-auto pa-5 tracker-card" elevation="10" rounded="xl">
-            <div class="d-flex align-center mb-3">
-              <v-avatar size="40" class="mr-3" color="primary" rounded="lg">
-                <v-icon>mdi-briefcase-clock</v-icon>
-              </v-avatar>
-              <div>
-                <h2 class="text-h6 font-weight-bold mb-0">Jornada de trabalho</h2>
-                <div class="text-caption text-medium-emphasis text-secondary">
-                  Registre pares de entrada/saída por dia
-                </div>
+    <!-- <v-container> -->
+    <v-row>
+      <v-col cols="12" md="6">
+        <v-card class="mx-auto pa-5 tracker-card" elevation="10" rounded="xl">
+          <div class="d-flex align-center mb-3">
+            <v-avatar size="40" class="mr-3" color="primary" rounded="lg">
+              <v-icon>mdi-briefcase-clock</v-icon>
+            </v-avatar>
+            <div>
+              <h2 class="text-h6 font-weight-bold mb-0">Jornada de trabalho</h2>
+              <div class="text-caption text-medium-emphasis text-secondary">
+                Registre pares de entrada/saída por dia
               </div>
-              <v-spacer />
-              <v-btn
-                variant="text"
-                prepend-icon="mdi-delete-sweep-outline"
-                class="text-none"
-                @click="clearAll"
-              >
-                Limpar tudo
-              </v-btn>
             </div>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              prepend-icon="mdi-delete-sweep-outline"
+              class="text-none"
+              @click="clearAll"
+            >
+              Limpar tudo
+            </v-btn>
+          </div>
 
-            <SelecaoDiaria
-              v-model:currentDate="currentDate"
-              :pairs="pairs"
-              :targetDailyMinutes="targetDailyMinutes"
-              :dayTotal="dayTotal"
-              :progressDaily="progressDaily"
-              :incompleteCount="incompleteCount"
-              :invalidCount="invalidCount"
-              :nowHM="nowHM"
-              :pairMinutes="pairMinutes"
-              :isCrossMidnight="isCrossMidnight"
-              :isInvalid="isInvalid"
-              :invalidMessage="invalidMessage"
-              :formatMinutes="formatMinutes"
-              :addPair="addPair"
-              :sortPairs="sortPairs"
-              :clearDay="clearDay"
-              :duplicatePair="duplicatePair"
-              :removePair="removePair"
-              :persistOnBlur="persistOnBlur"
-            />
-          </v-card>
-        </v-col>
+          <SelecaoDiaria
+            v-model:currentDate="currentDate"
+            :pairs="pairs"
+            :targetDailyMinutes="targetDailyMinutes"
+            :dayTotal="dayTotal"
+            :progressDaily="progressDaily"
+            :incompleteCount="incompleteCount"
+            :invalidCount="invalidCount"
+            :nowHM="nowHM"
+            :pairMinutes="pairMinutes"
+            :isCrossMidnight="isCrossMidnight"
+            :isInvalid="isInvalid"
+            :invalidMessage="invalidMessage"
+            :formatMinutes="formatMinutes"
+            :addPair="addPair"
+            :sortPairs="sortPairs"
+            :clearDay="clearDay"
+            :duplicatePair="duplicatePair"
+            :removePair="removePair"
+            :persistOnBlur="persistOnBlur"
+          />
+        </v-card>
+      </v-col>
 
-        <v-col cols="12" md="6">
-          <v-card class="mx-auto pa-5 tracker-card" elevation="10" rounded="xl">
-            <SemanaAtual
-              :currentWeekStart="currentWeekStart"
-              :currentWeek="currentWeek"
-              :targetDailyMinutes="targetDailyMinutes"
-              :weekLabel="weekLabel"
-              :formatMinutes="formatMinutes"
-              :pairsLength="pairs.length"
-            />
-          </v-card>
-          <v-card class="mx-auto my-5 pa-5 tracker-card" elevation="10" rounded="xl">
-            <HistoricoSemanal
-              v-model:weeksToShow="weeksToShow"
-              :weeklyHistory="weeklyHistory"
-              :formatMinutes="formatMinutes"
-            />
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
+      <v-col cols="12" md="6">
+        <v-card class="mx-auto pa-5 tracker-card" elevation="10" rounded="xl">
+          <SemanaAtual
+            :currentWeekStart="currentWeekStart"
+            :currentWeek="currentWeek"
+            :targetDailyMinutes="targetDailyMinutes"
+            :weekLabel="weekLabel"
+            :formatMinutes="formatMinutes"
+            :pairsLength="pairs.length"
+          />
+        </v-card>
+        <v-card class="mx-auto my-5 pa-5 tracker-card" elevation="10" rounded="xl">
+          <HistoricoSemanal
+            v-model:weeksToShow="weeksToShow"
+            :weeklyHistory="weeklyHistory"
+            :formatMinutes="formatMinutes"
+          />
+        </v-card>
+      </v-col>
+    </v-row>
+    <!-- </v-container> -->
   </div>
 </template>
 
