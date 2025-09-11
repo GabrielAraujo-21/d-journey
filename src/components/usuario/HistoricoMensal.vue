@@ -1,6 +1,7 @@
+<!-- src\components\usuario\HistoricoMensal.vue -->
 <template>
-  <div class="bg-surface-variant pa-7">
-    <v-card class="mx-auto my-5 pa-7" elevation="10" rounded="xl" max-width="980">
+  <div class="pa-7">
+    <v-card class="mx-auto my-5 pa-7 tracker-card" elevation="10" rounded="xl" max-width="980">
       <div class="d-flex align-center mb-4">
         <v-avatar size="40" class="mr-3" color="primary" rounded="lg">
           <v-icon>mdi-calendar-clock</v-icon>
@@ -13,32 +14,20 @@
         </div>
         <v-spacer />
         <v-chip class="mr-2" variant="tonal" prepend-icon="mdi-account-clock" color="primary">
-          ID: #{{ userStore.id }} - Nome: {{ userStore.name }}
+          ID: #{{ safeUser.id }} - Nome: {{ safeUser.name }}
         </v-chip>
         <v-chip variant="tonal" color="secondary" prepend-icon="mdi-cloud-sync"> API </v-chip>
       </div>
 
-      <!-- <v-alert
-      v-if="!apiBase"
-      type="error"
-      variant="tonal"
-      class="mb-4"
-      text="É necessário informar a prop 'apiBase' (ex.: http://localhost:3000)."
-    /> -->
-
       <v-tabs v-model="tab" class="mb-3">
-        <v-tab value="atual">
-          <v-icon start>mdi-calendar-month</v-icon>
-          {{ labelMesAtual }}
-        </v-tab>
+        <v-tab value="atual"><v-icon start>mdi-calendar-month</v-icon>{{ labelMesAtual }}</v-tab>
         <v-tab value="anterior">
-          <v-icon start>mdi-calendar-month-outline</v-icon>
-          {{ labelMesAnterior }}
+          <v-icon start>mdi-calendar-month-outline</v-icon>{{ labelMesAnterior }}
         </v-tab>
       </v-tabs>
 
       <v-window v-model="tab">
-        <!-- MÊS ATUAL -->
+        <!-- ATUAL -->
         <v-window-item value="atual">
           <v-sheet border rounded="xl" class="pa-4">
             <div class="d-flex flex-wrap align-center mb-3">
@@ -115,7 +104,7 @@
           </v-sheet>
         </v-window-item>
 
-        <!-- MÊS ANTERIOR (FECHADO) -->
+        <!-- ANTERIOR -->
         <v-window-item value="anterior">
           <v-sheet border rounded="xl" class="pa-4">
             <div class="d-flex flex-wrap align-center mb-3">
@@ -197,33 +186,38 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useUserStore } from '@/stores/user'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRegistrosStore } from '@/stores/registros'
-
-const userStore = useUserStore()
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   userId: { type: Number, default: 1 },
   apiBase: { type: String, default: 'http://localhost:3000' },
   order: { type: String, default: 'desc', validator: (v) => ['asc', 'desc'].includes(v) },
-  startOnMonday: { type: Boolean, default: true },
 })
 
+/* ===== Stores ===== */
+const reg = useRegistrosStore()
+const userStore = useUserStore()
+
+/* Usuário seguro (evita acesso a undefined durante a hidratação) */
+const safeUser = computed(() =>
+  userStore.user?.id ? userStore.user : { id: props.userId, name: '' },
+)
+
+/* API base (em prod o http já alterna para localStorage conforme seu serviço) */
 const baseUrl = computed(() => {
-  if (import.meta.env.MODE === 'production') return '' // ignorado no modo localStorage
-  return (
-    import.meta.env.VITE_API_URL || // .env.development
-    props.apiBase || // fallback por prop
-    'http://localhost:3000'
-  ) // fallback final
-    .replace(/\/$/, '')
+  if (import.meta.env.MODE === 'production') return ''
+  return (import.meta.env.VITE_API_URL || props.apiBase || 'http://localhost:3000').replace(
+    /\/$/,
+    '',
+  )
 })
 
-// const apiBase = computed(() => props.apiBase?.replace(/\/$/, '') || '')
+/* UI */
 const tab = ref('atual')
 
-// Datas base (mantidas)
+/* Faixas dos meses (congelado no 'today' para relatórios consistentes) */
 const today = new Date()
 const { start: startAtual, end: endAtual } = monthRangeCurrent(today)
 const { start: startAnterior, end: endAnterior } = monthRangePrevious(today)
@@ -235,6 +229,7 @@ const periodoAnterior = computed(
   () => `${formatShort(startAnterior)} – ${formatShort(endAnterior)}`,
 )
 
+/* Estados dos painéis */
 const stateAtual = reactive({ days: [], total: 0, daysWorked: 0 })
 const stateAnterior = reactive({ days: [], total: 0, daysWorked: 0 })
 const loadingAtual = ref(false)
@@ -242,12 +237,39 @@ const loadingAnterior = ref(false)
 const errorAtual = ref('')
 const errorAnterior = ref('')
 
-// Store de registros (só para buscar a faixa e reaproveitar cache se quiser)
-const reg = useRegistrosStore()
-reg.init({ userId: props.userId, apiBase: baseUrl.value })
-
+/* ===== Lifecycle ===== */
 onMounted(async () => {
-  // if (!apiBase.value) return
+  await userStore.ensureHydratedById(props.userId) // hidrata o foco
+  reg.switchUser(props.userId, baseUrl.value) // LIMPA cache + aponta para o novo usuário
+  await loadBothMonths()
+})
+
+/* Reatividade ao trocar o usuário foco */
+watch(
+  () => props.userId,
+  async (newId, oldId) => {
+    if (newId === oldId) return
+    await userStore.ensureHydratedById(newId)
+    reg.switchUser(newId, baseUrl.value) // LIMPA cache + aponta para o novo usuário
+    await loadBothMonths()
+  },
+)
+
+/* (Opcional) reordenar sem reconsultar o servidor */
+watch(
+  () => props.order,
+  async () => {
+    // só refaz a ordenação localmente
+    reorderState(stateAtual, props.order)
+    reorderState(stateAnterior, props.order)
+  },
+)
+
+/* ===== Loader central ===== */
+async function loadBothMonths() {
+  // limpa estados para não mostrar dados antigos enquanto carrega
+  resetState(stateAtual)
+  resetState(stateAnterior)
   loadingAtual.value = true
   loadingAnterior.value = true
   errorAtual.value = ''
@@ -259,24 +281,29 @@ onMounted(async () => {
     ])
     Object.assign(stateAtual, atual)
     Object.assign(stateAnterior, anterior)
+  } catch (e) {
+    console.warn('Erro ao carregar meses', e)
   } finally {
     loadingAtual.value = false
     loadingAnterior.value = false
   }
-})
+}
 
+/* ===== Builder ===== */
 async function buildMonthData(startDate, endDate, order) {
   const mapWithIds = await reg.fetchRange(startDate, endDate).catch((e) => {
     const msg = e?.message || 'Falha ao buscar registros'
+    // escolhe qual erro preencher com base no período
     if (toISODate(startDate) === toISODate(startAtual)) errorAtual.value = msg
     else errorAnterior.value = msg
     return {}
   })
 
-  // adaptamos para o mesmo shape esperado: { iso: pares[] }
+  // normaliza para { iso: pares[] }
   const map = {}
   for (const [iso, obj] of Object.entries(mapWithIds)) map[iso] = obj.pairs || []
 
+  // constroi os dias
   const days = []
   let cursor = new Date(startDate)
   while (cursor <= endDate) {
@@ -300,7 +327,20 @@ async function buildMonthData(startDate, endDate, order) {
   return { days, total, daysWorked }
 }
 
-/* ===== Utils (mesma lógica) ===== */
+/* ===== Utils ===== */
+function resetState(state) {
+  state.days = []
+  state.total = 0
+  state.daysWorked = 0
+}
+function reorderState(state, order) {
+  if (!Array.isArray(state.days) || state.days.length === 0) return
+  state.days = [...state.days].sort((a, b) =>
+    order === 'desc' ? (a.iso < b.iso ? 1 : -1) : a.iso > b.iso ? 1 : -1,
+  )
+}
+
+/* (iguais aos seus helpers) */
 function monthRangeCurrent(d) {
   const start = new Date(d.getFullYear(), d.getMonth(), 1)
   const end = new Date(d.getFullYear(), d.getMonth(), d.getDate())

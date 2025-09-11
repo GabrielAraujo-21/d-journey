@@ -1,5 +1,5 @@
+<!-- src/components/usuario/HistoricoSemanal.vue -->
 <template>
-  <!-- Histórico semanal (últimas N semanas) -->
   <div class="d-flex align-center mb-3">
     <h2 class="text-h6 font-weight-bold mb-0">Histórico semanal</h2>
     <v-spacer />
@@ -27,9 +27,9 @@
     <tbody>
       <tr v-for="w in weeklyHistory" :key="w.key">
         <td>{{ w.label }}</td>
-        <td>{{ formatMinutes(w.total) }}</td>
+        <td>{{ fmt(w.total) }}</td>
         <td>{{ w.daysWorked }}</td>
-        <td>{{ formatMinutes(w.avgPerDay || 0) }}</td>
+        <td>{{ fmt(w.avgPerDay || 0) }}</td>
       </tr>
     </tbody>
   </v-table>
@@ -37,12 +37,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { formatMinutes as fmt } from '@/plugins/dates'
 
 const props = defineProps({
   weeksToShow: { type: Number, required: true },
   weeklyHistory: { type: Array, required: true },
-  formatMinutes: { type: Function, required: true },
 })
+
 const emit = defineEmits(['update:weeksToShow'])
 
 const weeksToShowModel = computed({

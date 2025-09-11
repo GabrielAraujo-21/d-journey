@@ -10,7 +10,8 @@
       "ativo": true,
       "avatarUrl": "sem-imagem.png",
       "themeColor": "dark",
-      "managerId": 2
+      "managerId": 2,
+      "onLine": false
     },
     {
       "id": 2,
@@ -21,8 +22,9 @@
       "tipoContratoId": 1,
       "ativo": true,
       "avatarUrl": "sem-imagem.png",
-      "themeColor": "light",
-      "managerId": 4
+      "themeColor": "dark",
+      "managerId": 4,
+      "onLine": false
     },
     {
       "id": 3,
@@ -34,7 +36,8 @@
       "ativo": true,
       "avatarUrl": "sem-imagem.png",
       "themeColor": "light",
-      "managerId": 2
+      "managerId": 2,
+      "onLine": false
     }
   ],
   "escalas": [

@@ -1,3 +1,4 @@
+<!-- src/components/usuario/SelecaoDiaria.vue -->
 <template>
   <!-- Seleção do dia -->
   <v-row class="mb-4" align="center">
@@ -13,25 +14,31 @@
     </v-col>
 
     <v-col cols="12" md="3" class="d-flex align-end justify-end">
-      <v-btn color="primary" prepend-icon="mdi-plus" class="text-none" @click="addPair()">
-        Adicionar par
+      <v-btn color="primary" class="text-none" @click="$emit('add-pair')">
+        <template #prepend>
+          <v-icon>mdi-plus</v-icon>
+        </template>
+        <template #default><span class="text-body-2">Adicionar par</span></template>
       </v-btn>
     </v-col>
 
     <v-col cols="12" md="3" class="d-flex align-end justify-end">
-      <v-btn
-        variant="tonal"
-        class="text-none"
-        prepend-icon="mdi-sort-clock-ascending-outline"
-        @click="sortPairs()"
-      >
-        Ordenar por início
+      <v-btn variant="tonal" class="text-none" @click="$emit('sort-pairs')">
+        <template #prepend>
+          <v-icon>mdi-sort-clock-ascending-outline</v-icon>
+        </template>
+        <template #default><span class="text-body-2">Ordenar início</span></template>
       </v-btn>
     </v-col>
 
     <v-col cols="12" md="2" class="d-flex align-end justify-end">
-      <v-btn variant="text" class="text-none" prepend-icon="mdi-broom" @click="clearDay()">
-        Limpar dia
+      <v-btn variant="text" class="text-none" @click="$emit('clear-day')">
+        <template #prepend>
+          <v-icon>mdi-broom</v-icon>
+        </template>
+        <template #default
+          ><span class="text-body-2" style="font-size: 0.875rem">Limpar dia</span></template
+        >
       </v-btn>
     </v-col>
   </v-row>
@@ -65,7 +72,7 @@
           prepend-inner-icon="mdi-login-variant"
           hide-details="auto"
           clearable
-          @blur="persistOnBlur()"
+          @blur="$emit('persist')"
         >
           <template #append-inner>
             <v-tooltip text="Preencher com hora atual" activator="parent" />
@@ -94,7 +101,7 @@
           :error-messages="invalidMessage(idx)"
           hide-details="auto"
           clearable
-          @blur="persistOnBlur()"
+          @blur="$emit('persist')"
         >
           <template #append-inner>
             <v-tooltip text="Preencher com hora atual" activator="parent" />
@@ -124,7 +131,7 @@
         <v-btn
           icon
           variant="text"
-          @click="duplicatePair(idx)"
+          @click="$emit('duplicate-pair', idx)"
           :aria-label="`Duplicar par ${idx + 1}`"
         >
           <v-tooltip text="Duplicar par" activator="parent" />
@@ -134,7 +141,7 @@
           icon
           variant="text"
           color="error"
-          @click="removePair(idx)"
+          @click="$emit('remove-pair', idx)"
           :aria-label="`Remover par ${idx + 1}`"
         >
           <v-icon>mdi-delete-outline</v-icon>
@@ -148,20 +155,26 @@
     <div class="d-flex flex-wrap align-center justify-space-between mt-2">
       <div class="d-flex align-center gap-2">
         <v-chip variant="flat" color="primary" size="large" class="font-weight-medium mr-3">
-          Total do dia: {{ formatMinutes(dayTotal) }}
+          Total do dia: {{ formatMinutes(dayTotalLocal) }}
         </v-chip>
         <v-chip
-          v-if="incompleteCount > 0"
+          v-if="incompleteCountLocal > 0"
           variant="tonal"
           color="warning"
           size="small"
           class="mr-3"
         >
-          {{ incompleteCount }}
-          {{ incompleteCount === 1 ? 'par incompleto' : 'pares incompletos' }}
+          {{ incompleteCountLocal }}
+          {{ incompleteCountLocal === 1 ? 'par incompleto' : 'pares incompletos' }}
         </v-chip>
-        <v-chip v-if="invalidCount > 0" variant="tonal" color="error" size="small" class="mr-3">
-          {{ invalidCount }} {{ invalidCount === 1 ? 'par inválido' : 'pares inválidos' }}
+        <v-chip
+          v-if="invalidCountLocal > 0"
+          variant="tonal"
+          color="error"
+          size="small"
+          class="mr-3"
+        >
+          {{ invalidCountLocal }} {{ invalidCountLocal === 1 ? 'par inválido' : 'pares inválidos' }}
         </v-chip>
       </div>
 
@@ -169,13 +182,13 @@
         <v-progress-linear
           rounded
           height="12"
-          :model-value="progressDaily"
-          :striped="dayTotal < targetDailyMinutes"
+          :model-value="progressDailyLocal"
+          :striped="dayTotalLocal < targetDailyMinutes"
           color="primary"
         />
         <div class="text-caption text-medium-emphasis mt-1">
           Meta diária: {{ formatMinutes(targetDailyMinutes) }} • Progresso:
-          {{ Math.min(100, Math.round(progressDaily)) }}%
+          {{ Math.min(100, Math.round(progressDailyLocal)) }}%
         </div>
       </div>
     </div>
@@ -184,41 +197,73 @@
 
 <script setup>
 import { computed } from 'vue'
+import { nowHM, toMinutes, pairMinutes, isCrossMidnight, formatMinutes } from '@/plugins/dates'
 
-/* Mantemos nomenclaturas: recebemos tudo por props com os mesmos nomes
-   e chamamos as mesmas funções/variáveis que já existem no pai. */
 const props = defineProps({
   currentDate: { type: String, required: true },
   pairs: { type: Array, required: true },
   targetDailyMinutes: { type: Number, required: true },
-  dayTotal: { type: Number, required: true },
-  progressDaily: { type: Number, required: true },
-  incompleteCount: { type: Number, required: true },
-  invalidCount: { type: Number, required: true },
 
-  // funções utilitárias (mesmos nomes)
-  nowHM: { type: Function, required: true },
-  pairMinutes: { type: Function, required: true },
-  isCrossMidnight: { type: Function, required: true },
-  isInvalid: { type: Function, required: true },
-  invalidMessage: { type: Function, required: true },
-  formatMinutes: { type: Function, required: true },
-
-  // ações (mesmos nomes)
-  addPair: { type: Function, required: true },
-  sortPairs: { type: Function, required: true },
-  clearDay: { type: Function, required: true },
-  duplicatePair: { type: Function, required: true },
-  removePair: { type: Function, required: true },
-  persistOnBlur: { type: Function, required: true },
+  // (opcional) dados pré-calculados vindos do pai/store — se vierem, usamos;
+  // senão, calculamos localmente (fallback).
+  dayTotal: { type: Number, default: null },
+  progressDaily: { type: Number, default: null },
+  incompleteCount: { type: Number, default: null },
+  invalidCount: { type: Number, default: null },
 })
 
-const emit = defineEmits(['update:currentDate'])
+const emit = defineEmits([
+  'update:currentDate',
+  'add-pair',
+  'sort-pairs',
+  'clear-day',
+  'duplicate-pair',
+  'remove-pair',
+  'persist',
+])
 
 const currentDateModel = computed({
   get: () => props.currentDate,
   set: (v) => emit('update:currentDate', v),
 })
+
+// Derivados locais (independência do componente)
+const dayTotalLocal = computed(
+  () => props.dayTotal ?? props.pairs.reduce((a, p) => a + pairMinutes(p), 0),
+)
+const progressDailyLocal = computed(
+  () =>
+    props.progressDaily ??
+    (props.targetDailyMinutes > 0 ? (dayTotalLocal.value / props.targetDailyMinutes) * 100 : 0),
+)
+const incompleteCountLocal = computed(
+  () => props.incompleteCount ?? props.pairs.filter((p) => !(p.in && p.out)).length,
+)
+const invalidCountLocal = computed(
+  () =>
+    props.invalidCount ??
+    props.pairs.filter((p) => {
+      if (!(p.in && p.out)) return false
+      const a = toMinutes(p.in)
+      const b = toMinutes(p.out)
+      if (Number.isNaN(a) || Number.isNaN(b)) return true
+      const diff = (b - a + 24 * 60) % (24 * 60)
+      return diff === 0 || diff > 16 * 60
+    }).length,
+)
+
+function isInvalid(index) {
+  const p = props.pairs[index]
+  if (!(p?.in && p?.out)) return false
+  const a = toMinutes(p.in)
+  const b = toMinutes(p.out)
+  if (Number.isNaN(a) || Number.isNaN(b)) return true
+  const diff = (b - a + 24 * 60) % (24 * 60)
+  return diff === 0 || diff > 16 * 60
+}
+function invalidMessage(index) {
+  return isInvalid(index) ? 'Par inválido (verifique os horários)' : ''
+}
 </script>
 
 <style scoped>

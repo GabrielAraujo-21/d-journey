@@ -3,11 +3,7 @@
     <v-layout>
       <v-navigation-drawer v-model="drawer" expand-on-hover absolute permanent rail>
         <v-list>
-          <v-list-item
-            :prepend-avatar="'/' + userStore.avatarUrl"
-            :subtitle="userStore.email"
-            :title="userStore.name"
-          />
+          <v-list-item :prepend-avatar="authAvatarUrl" :subtitle="authEmail" :title="authName" />
         </v-list>
 
         <v-divider></v-divider>
@@ -57,24 +53,33 @@
       </v-app-bar>
 
       <v-main>
-        <router-view />
+        <RouterView />
       </v-main>
     </v-layout>
   </v-app>
 </template>
 
 <script setup>
-import { ref, onMounted, watchEffect } from 'vue'
+import { ref, onMounted, watchEffect, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+import { patchUser } from '@/services/api'
 
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
 const theme = useTheme()
+const auth = useAuthStore()
 
 const logoUrl = '/d-journey-logo-mark.svg'
+
+const authName = computed(() => auth.account?.name || '')
+const authEmail = computed(() => auth.account?.email || '')
+const authAvatarUrl = computed(() =>
+  auth.account?.avatarUrl ? '/' + auth.account.avatarUrl : '/sem-imagem.png',
+)
 
 const items = [
   {
@@ -97,6 +102,7 @@ const drawer = ref(null)
  */
 onMounted(() => {
   userStore.bootstrap()
+
   if (userStore.themeColor) {
     theme.change(userStore.themeColor)
   }
@@ -114,16 +120,25 @@ watchEffect(() => {
  * depois limpa a store/localStorage.
  */
 async function goLogout() {
+  // UX: sai da área autenticada primeiro
   await router.replace({ name: 'Login' })
-  userStore.clear()
+
+  // marca conta logada como offline (se houver id)
+  const id = auth.accountId
+  if (id) {
+    try {
+      await patchUser(id, { onLine: false })
+    } catch (e) {
+      console.warn('Falha ao marcar conta como offline', e)
+    }
+  }
+
+  // encerra sessão (limpa tokens/conta no authStore)
+  await auth.signOut({ notifyServer: false })
+
+  // (Opcional) Se quiser zerar o "usuário analisado" da app:
+  // userStore.clear()
 }
 </script>
 
-<style scoped>
-.journey {
-  color: #06b6d4;
-}
-.hifem {
-  color: #ed673a;
-}
-</style>
+<style scoped></style>

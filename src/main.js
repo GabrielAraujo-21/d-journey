@@ -30,6 +30,9 @@ const vuetify = createVuetify({
 // Bootstrap da aplicação
 import { useUserStore } from '@/stores/user'
 
+// CSS global
+import '@/assets/main.css'
+
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -41,6 +44,12 @@ userStore.bootstrap()
 
 app.use(router)
 app.use(vuetify)
+
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
+
+auth.bootstrap() // restaura sessão (se existir)
+auth.ensureAuthHeader() // injeta Authorization no http
 
 // Dica: o tema será aplicado no Login ao entrar
 // e no layout Usuario.vue ao montar (ver arquivo).

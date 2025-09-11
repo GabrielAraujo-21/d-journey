@@ -86,23 +86,27 @@
                   hide-details
                   density="compact"
                   label="Lembrar de mim"
+                  :model-value="true"
+                  disabled
                 />
                 <RouterLink class="text-primary text-decoration-none" to="/recuperar-senha"
                   >Esqueci minha senha</RouterLink
                 >
               </div>
 
-              <v-btn
-                type="button"
-                block
-                size="large"
-                class="mb-4"
-                color="primary"
-                :loading="state.loading"
-                @click="((userAdmin = false), onSubmit())"
-              >
-                Entrar (Demostração de Usuário)
-              </v-btn>
+              <v-card variant="tonal" class="pa-3 mb-4 tracker-card" color="primary">
+                <template #title>
+                  <div class="d-flex align-center text-secondary">
+                    <v-icon class="mr-2">mdi-information-outline</v-icon>
+                    <span>Ver exemplo da aplicação como:</span>
+                  </div>
+                </template>
+
+                <v-radio-group v-model="userId" class="mb-4 pl-16" row>
+                  <v-radio label="Usuário" :value="1" />
+                  <v-radio label="Administrador" :value="2" />
+                </v-radio-group>
+              </v-card>
 
               <v-btn
                 type="button"
@@ -111,10 +115,22 @@
                 class="mb-4"
                 color="primary"
                 :loading="state.loading"
-                @click="((userAdmin = true), onSubmit())"
+                @click="onSubmit()"
+              >
+                Entrar
+              </v-btn>
+
+              <!-- <v-btn
+                type="button"
+                block
+                size="large"
+                class="mb-4"
+                color="primary"
+                :loading="state.loading"
+                @click="onSubmit()"
               >
                 Entrar (Demostração de Gestor)
-              </v-btn>
+              </v-btn> -->
             </v-form>
           </v-card-text>
 
@@ -132,110 +148,74 @@
       </v-col>
     </v-row>
 
-    <div class="blob blob-1" />
-    <div class="blob blob-2" />
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
   </v-container>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
-import { useUserStore } from '@/stores/user'
-import { getUserById, patchUser } from '@/services/api' // ⟵ usa o service
-
-const logoUrl = '/d-journey-logo-mark.svg'
+import { useAuthStore } from '@/stores/auth'
+import { getUserById } from '@/services/api'
 
 const router = useRouter()
 const theme = useTheme()
-const user = useUserStore()
-const isDark = computed(() => theme.global.current.value.dark)
+const auth = useAuthStore()
 
-const formRef = ref(null)
-const state = reactive({
+const userId = ref(null)
+
+const isDark = computed(() => theme.global.current.value.dark)
+const applyTheme = (mode) => theme.change(mode === 'dark' ? 'dark' : 'light')
+
+// === NOVO: delega a troca para o store ===
+const toggleTheme = async () => {
+  const next = isDark.value ? 'light' : 'dark'
+  await auth.changeTheme(next, { applyTheme })
+}
+
+const state = ref({
   email: '',
   password: '',
-  remember: true,
   showPassword: false,
+  remember: false,
   loading: false,
   error: null,
 })
-const userAdmin = ref(false)
-
+const logoUrl = '/d-journey-logo-mark.svg'
 const rules = {
   required: (v) => !!v || v === 0 || 'Campo obrigatório',
   email: (v) => /.+@.+\..+/.test(String(v).toLowerCase()) || 'E-mail inválido',
   min: (len) => (v) => String(v || '').length >= len || `Mínimo de ${len} caracteres`,
 }
-
-// const canSubmit = computed(() => !state.loading && state.email && state.password)
-
-/** Alternância de tema respeitando o atributo themeColor do usuário */
-const toggleTheme = async () => {
-  const next = isDark.value ? 'light' : 'dark'
-  if (user.isLoggedIn) {
-    if (user.themeColor !== next) {
-      user.themeColor = next
-
-      // Atualiza também no backend fake (opcional)
-      try {
-        await patchUser(user.id, { themeColor: next })
-      } catch {
-        // não faz nada se falhar
-      }
-      // Regrava no localStorage via setUser para manter a persistência
-      user.setUser({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        PerfilTipoId: user.PerfilTipoId,
-        avatarUrl: user.avatarUrl,
-        escalaId: user.escalaId,
-        tipoContratoId: user.tipoContratoId,
-        ativo: user.ativo,
-        themeColor: next,
-        registros: user.registros,
-        escalas: user.escalas,
-      })
-    }
-  }
-  theme.change(next)
-}
-
-/**
- * onSubmit:
- * - busca usuário (ID 1 ou 2) COM RELACIONAMENTOS (embed + expand)
- * - grava no Pinia com setUser(u) (mantém sua nomenclatura)
- * - aplica o tema salvo
- * - navega para /user/:id ou /admin/:id conforme PerfilTipoId
- */
 async function onSubmit() {
-  state.loading = true
-  state.error = null
-
+  state.value.loading = true
+  state.value.error = null
   try {
-    const targetId = userAdmin.value ? 2 : 1
+    const targetId = userId.value
+    const u = await getUserById(targetId)
 
-    const u = await getUserById(targetId, {
-      embed: ['escalas', 'registros'], // filhos por FK userId
-      expand: ['PerfilTipo', 'tipoContrato'], // pais referenciados no user
+    // Seta sessão + conta
+    auth.setSession({
+      accessToken: crypto.randomUUID(),
+      refreshToken: crypto.randomUUID(),
+      tokenType: 'Bearer',
+      expiresIn: 24 * 60 * 60,
     })
+    auth.setAccount(u)
 
-    // Mantemos sua store como está (sem mudar shape)
-    user.setUser(u)
+    // === NOVO: aplica/sincroniza tema ANTES de navegar ===
+    await auth.syncThemeOnLogin({ applyTheme })
 
-    // Altera o tema do usuário.
-    theme.change(user.themeColor || 'dark')
-
-    if (u.PerfilTipoId === 3) {
-      router.push(`/admin/${targetId}`)
-    } else {
-      router.push(`/user/${targetId}`)
-    }
+    // Agora pode navegar para o layout
+    if (u?.PerfilTipoId === 3) router.push(`/admin/${targetId}`)
+    else router.push(`/user/${targetId}`)
   } catch (err) {
-    state.error = 'Falha ao autenticar. Tente novamente.' + (err?.message || '')
+    state.value.error = 'Falha ao autenticar. Tente novamente.' + (err?.message || '')
   } finally {
-    state.loading = false
+    // loader só sai após o tema ter sido aplicado/sincronizado
+    state.value.loading = false
   }
 }
 </script>

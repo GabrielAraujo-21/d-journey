@@ -1,33 +1,24 @@
+<!-- src/components/usuario/SemanaAtual.vue -->
 <template>
-  <!-- Resumo da semana atual -->
   <div class="d-flex align-center mb-3">
-    <h2 class="text-h6 font-weight-bold mb-0">Semana atual ({{ weekLabel(currentWeekStart) }})</h2>
+    <h2 class="text-h6 font-weight-bold mb-0">Semana atual ({{ label }})</h2>
     <v-spacer />
     <v-chip variant="tonal" class="mr-2" color="primary"
-      >Total: {{ formatMinutes(currentWeek.total) }}</v-chip
+      >Total: {{ fmt(currentWeek.total) }}</v-chip
     >
     <v-chip variant="tonal" color="primary"
-      >Média/dia: {{ formatMinutes(currentWeek.avgPerDay || 0) }}</v-chip
+      >Média/dia: {{ fmt(currentWeek.avgPerDay || 0) }}</v-chip
     >
   </div>
+
   <v-sheet class="pa-4 rounded-xl week-sheet" border>
     <v-row>
       <v-col v-for="(d, i) in currentWeek.days" :key="i" cols="12" sm="6" md="3" lg="3">
         <v-card variant="tonal" rounded="lg" class="pa-3 h-100">
-          <div class="d-flex justify-space-between align-center mb-2">
-            <div class="text-caption text-medium-emphasis mb-1">
-              {{ d.label }} ({{ d.dateLabel }})
-            </div>
-            <!-- <v-chip
-              class="text-caption text-medium-emphasis mb-1"
-              variant="tonal"
-              size="small"
-              color="primary"
-            >
-              {{ pairsLength }} {{ pairsLength === 1 ? 'par' : 'pares' }}
-            </v-chip> -->
+          <div class="text-caption text-medium-emphasis mb-1">
+            {{ d.label }} ({{ d.dateLabel }})
           </div>
-          <div class="text-h6 font-weight-bold">{{ formatMinutes(d.total) }}</div>
+          <div class="text-h6 font-weight-bold">{{ fmt(d.total) }}</div>
           <v-progress-linear
             class="mt-2"
             :model-value="Math.min(100, Math.round((d.total / targetDailyMinutes) * 100))"
@@ -42,14 +33,17 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { weekLabel, formatMinutes as fmt } from '@/plugins/dates'
+
 const props = defineProps({
-  currentWeekStart: { type: Object, required: true }, // Date
+  currentWeekStart: { type: [String, Object], required: true }, // ISO ou Date
   currentWeek: { type: Object, required: true },
   targetDailyMinutes: { type: Number, required: true },
-  weekLabel: { type: Function, required: true },
-  formatMinutes: { type: Function, required: true },
-  pairsLength: { type: Number, required: true },
 })
+
+const toDate = (v) => (v instanceof Date ? v : new Date(v))
+const label = computed(() => weekLabel(toDate(props.currentWeekStart)))
 </script>
 
 <style scoped>

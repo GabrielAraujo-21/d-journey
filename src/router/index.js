@@ -1,10 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/Login.vue'
+import Login from '../views/LoginComponent.vue'
 import UsuarioLayout from '@/layout/UsuarioLayout.vue'
 import GestorLayout from '@/layout/GestorLayout.vue'
 import DJourneyTimeTracker from '@/components/usuario/DJourneyTimeTracker.vue'
 import HistoricoMensal from '@/components/usuario/HistoricoMensal.vue'
 import { useUserStore } from '@/stores/user'
+import { patchUser } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+
+const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
 const routes = [
   {
@@ -19,18 +23,26 @@ const routes = [
     component: UsuarioLayout,
     meta: { requiresAuth: true },
     props: (route) => ({
-      apiBase: (import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''), // remove / final
+      apiBase,
       userId: Number(route.params.id),
       order: 'desc',
     }),
     children: [
-      { path: '', name: 'djourney', component: DJourneyTimeTracker },
+      {
+        path: '',
+        name: 'djourney',
+        component: DJourneyTimeTracker,
+        props: (route) => ({
+          apiBase,
+          userId: Number(route.params.id),
+        }),
+      },
       {
         path: 'historico-mensal',
         name: 'historico-mensal',
         component: HistoricoMensal,
         props: (route) => ({
-          apiBase: (import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''), // remove / final
+          apiBase,
           userId: Number(route.params.id),
           order: 'desc',
         }),
@@ -40,19 +52,88 @@ const routes = [
 
   {
     path: '/admin/:id',
-    name: 'Admins',
+    name: 'gestor',
     component: GestorLayout,
     meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'djourney-gestor',
+        component: DJourneyTimeTracker,
+        props: {
+          apiBase,
+          userId: null,
+        },
+      },
+
+      // [ADD] Guard per-route: busca o usuário selecionado e injeta como props
+      {
+        path: 'usuario/:userId',
+        name: 'djourney-gestor-usuario',
+        component: DJourneyTimeTracker,
+        // props inclui o userId e o objeto resolvido na guard (via meta)
+        props: (route) => ({
+          apiBase,
+          userId: Number(route.params.userId),
+          selectedUser: route.meta?.selectedUser ?? null, // << aqui vai o payload buscado
+        }),
+        // Guard executa antes de entrar na rota:
+        beforeEnter: async (to) => {
+          const userId = Number(to.params.userId)
+          if (!Number.isFinite(userId)) {
+            // userId inválido — deixa seguir sem bloquear, mas sem selectedUser
+            to.meta.selectedUser = null
+            return true
+          }
+          try {
+            // import dinâmico evita ciclos e só carrega quando necessário
+            const mod = await import('@/services/api')
+            // se houver getUserById, usa; caso contrário, fallback p/ http
+            const getUserById = mod.getUserById
+            const http = mod.http
+
+            const resp = getUserById
+              ? await getUserById(userId)
+              : await http.get(`/users/${userId}`)
+
+            // normaliza (resp, resp.data ou array)
+            const u = Array.isArray(resp?.data) ? resp.data[0] : (resp?.data ?? resp) || null
+
+            to.meta.selectedUser = u || null
+          } catch (e) {
+            console.warn('Falha ao buscar usuário selecionado:', e)
+            to.meta.selectedUser = null
+          }
+          return true // permite a navegação
+        },
+      },
+    ],
   },
 
-  // rota dedicada para logout
+  // logout mantido
   {
     path: '/logout',
     name: 'logout',
-    beforeEnter: () => {
-      const store = useUserStore()
-      store.logout() // limpa store + localStorage
-      return { name: 'Login' } // volta pro login
+    beforeEnter: async () => {
+      const auth = useAuthStore()
+
+      // atualiza status online da conta logada (se houver)
+      if (auth.accountId) {
+        try {
+          await patchUser(auth.accountId, { onLine: false })
+        } catch (e) {
+          console.warn('Falha ao marcar conta como offline', e)
+        }
+      }
+
+      // encerra sessão (limpa tokens + account no authStore)
+      await auth.signOut({ notifyServer: false })
+
+      // “resetar” o contexto analisado:
+      const userStore = useUserStore()
+      userStore.clear()
+
+      return { name: 'Login' }
     },
   },
 
@@ -67,11 +148,12 @@ const router = createRouter({
   routes,
 })
 
-// Guard: reidrata e protege rotas autenticadas
+// Guard global de auth (mantido)
 router.beforeEach((to) => {
-  const store = useUserStore()
-  if (!store.isLoggedIn) store.bootstrap()
-  if (to.meta?.requiresAuth && !store.isLoggedIn) {
+  const auth = useAuthStore()
+  auth.bootstrap()
+
+  if (to.meta?.requiresAuth && !auth.isAuthenticated) {
     return { name: 'Login', query: { redirect: to.fullPath } }
   }
 })

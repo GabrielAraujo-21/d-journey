@@ -3,13 +3,28 @@
     <!-- App Bar -->
     <v-app-bar flat>
       <v-container class="mx-auto d-flex align-center justify-center">
+        <img
+          class="logo-lg mx-auto mb-3"
+          :src="logoUrl"
+          alt="d-journey"
+          width="44"
+          height="44"
+          decoding="async"
+          loading="eager"
+          fetchpriority="high"
+        />
+
         <v-list-item
           :prepend-avatar="managerAvatar"
           :subtitle="managerEmail"
           :title="managerName"
-        ></v-list-item>
-
-        <v-btn v-for="link in links" :key="link" :text="link" variant="text"></v-btn>
+          rounded="lg"
+          density="comfortable"
+          class="pb-3"
+        >
+        </v-list-item>
+        <!-- usar o conteúdo do botão em vez de :text -->
+        <v-btn v-for="link in links" :key="link" variant="text">{{ link }}</v-btn>
 
         <v-spacer></v-spacer>
 
@@ -35,15 +50,16 @@
     </v-app-bar>
 
     <!-- Main -->
-    <v-main class="bg-grey-lighten-3">
+    <v-main>
       <v-container>
         <v-row>
           <!-- Lateral esquerda: equipe do gestor -->
           <v-col cols="12" md="3" lg="3">
             <v-sheet rounded="lg">
-              <v-list rounded="lg">
+              <v-list rounded="lg" class="tracker-card" lines="two">
                 <v-list-subheader class="text-medium-emphasis">Minha equipe</v-list-subheader>
 
+                <v-divider class="my-2" />
                 <template v-if="loading">
                   <v-skeleton-loader
                     type="list-item-two-line, list-item-two-line, list-item-two-line"
@@ -69,17 +85,25 @@
 
                   <v-list-item
                     v-for="u in filteredUsers"
-                    :key="u.id"
+                    :key="u.id ?? u.email ?? u.name"
                     :prepend-avatar="userAvatar(u)"
                     :title="u.name"
                     :subtitle="u.email"
                     rounded="lg"
                     density="comfortable"
+                    :to="{
+                      // [FIX] Navegação correta por nome de rota filho, preservando o :id do gestor
+                      name: 'djourney-gestor-usuario',
+                      params: { id: $route.params.id, userId: u.id },
+                    }"
+                    :exact="true"
+                    active-class="router-link-exact-active"
+                    link
                   >
-                    <!-- Se quiser navegar para o detalhe do usuário, descomente a linha abaixo -->
-                    <!-- <template #append>
-                      <v-btn icon="mdi-open-in-new" variant="text" :to="{ name: 'usuario', params: { id: u.id } }" />
-                    </template> -->
+                    <template #append>
+                      <v-badge v-show="u.onLine" color="green" dot overlap class="mb-2 ml-5" />
+                      <v-badge v-show="!u.onLine" color="red" dot overlap class="mb-2 ml-5" />
+                    </template>
                   </v-list-item>
 
                   <v-divider class="my-2" />
@@ -89,7 +113,7 @@
                     title="Atualizar lista"
                     prepend-icon="mdi-refresh"
                     link
-                    @click="reloadTeam"
+                    @click="reloadTeam()"
                   />
                 </template>
               </v-list>
@@ -99,7 +123,7 @@
           <!-- Conteúdo principal -->
           <v-col cols="12" md="9" lg="9">
             <v-sheet min-height="70vh" rounded="lg">
-              <router-view />
+              <RouterView :key="`sel-${$route.params.userId || 'none'}`" />
             </v-sheet>
           </v-col>
         </v-row>
@@ -109,188 +133,60 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 import { useTheme } from 'vuetify'
-import { http } from '@/services/api' // ⟵ usa dev/prod automaticamente
+
+const links = ['Dashboard', 'Minhas Marcações', 'Aprovações', 'Relatórios']
 
 const theme = useTheme()
 const userStore = useUserStore()
-const route = useRoute()
+const auth = useAuthStore()
 
 const DEFAULT_AVATAR = '/sem-imagem.png'
-
-const loading = ref(false)
-const error = ref('')
 const search = ref('')
+const logoUrl = '/d-journey-logo-mark.svg'
 
-const team = ref([]) // usuários subordinados ao gestor (managerId = gestor.id)
-
-/* Helpers de API via http (sem fetch direto) */
-async function fetchUserById(id) {
-  return await http.get(`/users/${id}`)
-}
-async function fetchTeamByManager(managerId) {
-  return await http.get('/users', {
-    search: { managerId, _sort: 'name', _order: 'asc' },
-  })
+function reloadTeam() {
+  // separação: equipe do gestor logado (conta), não do userStore (selecionado)
+  return userStore.reloadTeam(auth.accountId)
 }
 
-/* Garantir que o gestor está carregado no store (após refresh, por exemplo) */
-async function ensureManagerLoaded() {
-  const paramId = Number(route.params.id)
-  if (!userStore.isLoggedIn || userStore.id !== paramId) {
-    const u = await fetchUserById(paramId)
-    userStore.setUser(u)
-  }
-}
-
-/* Carregar equipe */
-async function reloadTeam() {
-  loading.value = true
-  error.value = ''
-  try {
-    await ensureManagerLoaded()
-    const managerId = userStore.id
-    const arr = await fetchTeamByManager(managerId)
-    team.value = Array.isArray(arr) ? arr : []
-    theme.change(userStore.themeColor)
-  } catch (e) {
-    error.value = e?.message || 'Não foi possível carregar a equipe.'
-  } finally {
-    loading.value = false
-  }
-}
-
-/* Computeds para header do gestor */
-const managerName = computed(() => userStore.name || 'Gestor')
-const managerEmail = computed(() => userStore.email || 'email@empresa.com')
+/* Header do gestor (conta logada) */
+const managerName = computed(() => auth.account?.name || 'Gestor')
+const managerEmail = computed(() => auth.account?.email || 'email@empresa.com')
 const managerAvatar = computed(() =>
-  userStore.avatarUrl ? `/${userStore.avatarUrl}` : DEFAULT_AVATAR,
+  auth.account?.avatarUrl ? `/${auth.account.avatarUrl}` : DEFAULT_AVATAR,
 )
 
-/* Avatar do usuário da lista */
+/* Lista/estado */
+const team = computed(() => (Array.isArray(userStore.team) ? userStore.team : []))
+const loading = computed(() => userStore.loading)
+const error = computed(() => userStore.error)
+
 function userAvatar(u) {
   return u?.avatarUrl ? `/${u.avatarUrl}` : DEFAULT_AVATAR
 }
 
-/* Filtro local por nome/e-mail */
 const filteredUsers = computed(() => {
+  const base = team.value
+  if (!Array.isArray(base) || base.length === 0) return []
   const q = (search.value || '').toLowerCase().trim()
-  if (!q) return team.value
-  return team.value.filter((u) => {
-    const name = String(u.name || '').toLowerCase()
-    const email = String(u.email || '').toLowerCase()
-    return name.includes(q) || email.includes(q)
-  })
+  if (!q) return base
+  return base.filter(
+    (u) =>
+      String(u.name || '')
+        .toLowerCase()
+        .includes(q) ||
+      String(u.email || '')
+        .toLowerCase()
+        .includes(q),
+  )
 })
 
-onMounted(reloadTeam)
-watch(
-  () => route.params.id,
-  async () => {
-    await reloadTeam()
-  },
-)
-
-const links = ['Dashboard', 'Messages', 'Profile', 'Updates']
+onMounted(async () => {
+  theme.change(auth.account?.themeColor || 'light')
+  await reloadTeam()
+})
 </script>
-
-<!-- <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useTheme } from 'vuetify'
-const theme = useTheme()
-
-const userStore = useUserStore()
-const route = useRoute()
-
-/* Config */
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
-const DEFAULT_AVATAR = '/sem-imagem.png'
-
-/* Estado */
-const loading = ref(false)
-const error = ref('')
-const search = ref('')
-
-const team = ref([]) // usuários subordinados ao gestor (managerId = gestor.id)
-
-/* Helpers de API */
-async function fetchUserById(id) {
-  const res = await fetch(`${API_BASE}/users/${id}`)
-  if (!res.ok) throw new Error(`Usuário ${id} não encontrado`)
-  return await res.json()
-}
-
-async function fetchTeamByManager(managerId) {
-  const url = `${API_BASE}/users?managerId=${encodeURIComponent(managerId)}&_sort=name&_order=asc`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Falha ao carregar equipe do gestor #${managerId}`)
-  return await res.json()
-}
-
-/* Garantir que o gestor está carregado no store (após refresh, por exemplo) */
-async function ensureManagerLoaded() {
-  const paramId = Number(route.params.id)
-  // Se já está logado e o id bate, ok; caso contrário, busca e seta.
-  if (!userStore.isLoggedIn || userStore.id !== paramId) {
-    const u = await fetchUserById(paramId)
-    userStore.setUser(u)
-  }
-}
-
-/* Carregar equipe */
-async function reloadTeam() {
-  loading.value = true
-  error.value = ''
-  try {
-    await ensureManagerLoaded()
-    const managerId = userStore.id
-    const arr = await fetchTeamByManager(managerId)
-    team.value = Array.isArray(arr) ? arr : []
-    theme.change(userStore.themeColor)
-  } catch (e) {
-    error.value = e?.message || 'Não foi possível carregar a equipe.'
-  } finally {
-    loading.value = false
-  }
-}
-
-/* Computeds para header do gestor */
-const managerName = computed(() => userStore.name || 'Gestor')
-const managerEmail = computed(() => userStore.email || 'email@empresa.com')
-const managerAvatar = computed(() =>
-  userStore.avatarUrl ? `/${userStore.avatarUrl}` : DEFAULT_AVATAR,
-)
-
-/* Avatar do usuário da lista */
-function userAvatar(u) {
-  return u?.avatarUrl ? `/${u.avatarUrl}` : DEFAULT_AVATAR
-}
-
-/* Filtro local por nome/e-mail */
-const filteredUsers = computed(() => {
-  const q = (search.value || '').toLowerCase().trim()
-  if (!q) return team.value
-  return team.value.filter((u) => {
-    const name = String(u.name || '').toLowerCase()
-    const email = String(u.email || '').toLowerCase()
-    return name.includes(q) || email.includes(q)
-  })
-})
-
-/* Lifecycle */
-onMounted(reloadTeam)
-
-/* Se o :id do gestor mudar (navegação), recarrega */
-watch(
-  () => route.params.id,
-  async () => {
-    await reloadTeam()
-  },
-)
-const links = ['Dashboard', 'Messages', 'Profile', 'Updates']
-</script> -->
