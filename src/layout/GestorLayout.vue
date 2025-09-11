@@ -51,7 +51,7 @@
 
     <!-- Main -->
     <v-main>
-      <v-container>
+      <v-card class="mx-7 my-7 pa-4">
         <v-row>
           <!-- Lateral esquerda: equipe do gestor -->
           <v-col cols="12" md="3" lg="3">
@@ -127,7 +127,7 @@
             </v-sheet>
           </v-col>
         </v-row>
-      </v-container>
+      </v-card>
     </v-main>
   </v-app>
 </template>
