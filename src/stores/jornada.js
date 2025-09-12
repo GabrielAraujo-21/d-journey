@@ -2,6 +2,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useRegistrosStore } from '@/stores/registros'
+import { useAuthStore } from '@/stores/auth'
+
 import {
   todayISO,
   toISODate,
@@ -11,10 +13,12 @@ import {
   dateISOAtWeekOffset,
   formatShort,
   pairMinutes,
+  pairMinutesTz,
 } from '@/plugins/dates'
 
 export const useJornadaStore = defineStore('jornada', () => {
   const reg = useRegistrosStore()
+  const auth = useAuthStore()
 
   const userId = ref(null)
   const apiBase = ref('')
@@ -50,7 +54,11 @@ export const useJornadaStore = defineStore('jornada', () => {
 
   // ---------- Derivados ----------
   const pairs = computed(() => reg.entries[currentDate.value] || [])
-  const dayTotal = computed(() => pairs.value.reduce((acc, p) => acc + pairMinutes(p), 0))
+  // const dayTotal = computed(() => pairs.value.reduce((acc, p) => acc + pairMinutes(p), 0))
+  // (Opcional) Alternativa ancorada na data:
+  const dayTotal = computed(() =>
+    pairs.value.reduce((acc, p) => acc + pairMinutesTz(p, currentDate.value), 0),
+  )
   const progressDaily = computed(() =>
     targetDailyMinutes.value > 0 ? (dayTotal.value / targetDailyMinutes.value) * 100 : 0,
   )
@@ -78,7 +86,7 @@ export const useJornadaStore = defineStore('jornada', () => {
       return {
         iso,
         total: totalOfDate(iso),
-        label: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][new Date(iso).getDay()],
+        label: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][new Date(iso).getDay()],
         dateLabel: formatShort(addDays(currentWeekStart.value, i)),
       }
     })
@@ -109,40 +117,15 @@ export const useJornadaStore = defineStore('jornada', () => {
       })
     }
     return list
-    // const list = []
-    // const baseStart = getWeekStart(new Date())
-    // for (let i = 0; i < weeksToShow.value; i++) {
-    //   const start = addDays(baseStart, -7 * i)
-    //   const end = addDays(start, 6)
-    //   const totals = Array.from({ length: 7 }).map((_, dIdx) =>
-    //     (reg.entries[dateISOAtWeekOffset(start, dIdx)] || []).reduce(
-    //       (acc, p) => acc + pairMinutes(p),
-    //       0,
-    //     ),
-    //   )
-    //   const total = totals.reduce((a, b) => a + b, 0)
-    //   const daysWorked = totals.filter((v) => v > 0).length
-    //   list.push({
-    //     key: `${toISODate(start)}_${toISODate(end)}`,
-    //     label: `${formatShort(start)} – ${formatShort(end)}`,
-    //     total,
-    //     daysWorked,
-    //     avgPerDay: daysWorked ? total / daysWorked : 0,
-    //   })
-    // }
-    // return list
   })
 
   // ---------- IO ----------
   async function ensureCurrentDayLoaded() {
+    if (!userId.value) return // << bloqueia quando não há usuário selecionado
     await reg.ensureDayLoaded(currentDate.value)
   }
   async function preloadWeeksRange() {
-    // const baseStart = getWeekStart(currentDate.value)
-    // const start = addDays(baseStart, -7 * (Math.max(1, weeksToShow.value) - 1))
-    // const end = addDays(baseStart, 6)
-    // await reg.preloadRange(start, end)
-    // if (!(currentDate.value in reg.entries)) reg.setPairs(currentDate.value, [])
+    if (!userId.value) return // << bloqueia quando não há usuário selecionado
     const baseStart = currentWeekStart.value
     const start = addDays(baseStart, -7 * (Math.max(1, weeksToShow.value) - 1))
     const end = addDays(baseStart, 6)
@@ -152,7 +135,6 @@ export const useJornadaStore = defineStore('jornada', () => {
 
   // se quiser: re-hidratar quando mudar a data/semana
   watch(currentDate, ensureCurrentDayLoaded)
-  // watch(weeksToShow, preloadWeeksRange)
   watch([currentWeekStart, weeksToShow], preloadWeeksRange, { immediate: true })
 
   // ---------- Ações ----------
@@ -182,6 +164,65 @@ export const useJornadaStore = defineStore('jornada', () => {
     await reg.clearAllFromServer()
     reg.clearCache()
     reg.setPairs(currentDate.value, [])
+  }
+
+  // ===== NOVO: status/permissions do dia corrente =====
+  const currentStatus = computed(() => reg.statusByDate[currentDate.value] || 'rascunho')
+  const currentMeta = computed(
+    () => reg.metaByDate[currentDate.value] || { locks: { userLocked: false } },
+  )
+
+  const isManager = computed(() => auth?.account?.PerfilTipoId === 3)
+  const isUser = computed(() => auth?.account?.PerfilTipoId === 4)
+
+  const canEdit = computed(() => {
+    const s = currentStatus.value
+    if (isManager.value) return true // gestor pode editar sempre (opcional, mude se quiser)
+    return s === 'rascunho' || s === 'pronto' || s === 'reprovado'
+  })
+
+  const canSubmit = computed(() => {
+    const s = currentStatus.value
+    return (
+      isUser.value &&
+      (s === 'pronto' || s === 'rascunho') &&
+      reg.pairsCountOf(currentDate.value) > 0
+    )
+  })
+
+  const canRetract = computed(() => isUser.value && currentStatus.value === 'enviado')
+  const canApprove = computed(() => isManager.value && currentStatus.value === 'enviado')
+  const canReject = computed(() => isManager.value && currentStatus.value === 'enviado')
+  const canReopen = computed(
+    () =>
+      isManager.value && (currentStatus.value === 'aprovado' || currentStatus.value === 'fechado'),
+  )
+  const canClose = computed(() => isManager.value && currentStatus.value === 'aprovado')
+
+  // Wrappers p/ UI (no dia atual)
+  async function markReadyToday() {
+    await reg.markReady(currentDate.value)
+  }
+  async function markDraftToday() {
+    await reg.markDraft(currentDate.value)
+  }
+  async function submitToday() {
+    await reg.submitDay(currentDate.value)
+  }
+  async function retractToday() {
+    await reg.retractDay(currentDate.value)
+  }
+  async function approveToday(note) {
+    await reg.approveDay(currentDate.value, { reviewerId: auth.accountId, note })
+  }
+  async function rejectToday(note) {
+    await reg.rejectDay(currentDate.value, { reviewerId: auth.accountId, note })
+  }
+  async function reopenToday(reason) {
+    await reg.reopenDay(currentDate.value, { reviewerId: auth.accountId, reason })
+  }
+  async function closeToday() {
+    await reg.closeDay(currentDate.value, { reviewerId: auth.accountId })
   }
 
   return {
@@ -215,5 +256,28 @@ export const useJornadaStore = defineStore('jornada', () => {
     clearDay,
     persist,
     clearAll,
+
+    // status + permissions
+    currentStatus,
+    currentMeta,
+    isManager,
+    isUser,
+    canEdit,
+    canSubmit,
+    canRetract,
+    canApprove,
+    canReject,
+    canReopen,
+    canClose,
+
+    // ações de validação no dia atual
+    markReadyToday,
+    markDraftToday,
+    submitToday,
+    retractToday,
+    approveToday,
+    rejectToday,
+    reopenToday,
+    closeToday,
   }
 })

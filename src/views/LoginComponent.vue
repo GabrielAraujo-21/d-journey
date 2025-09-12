@@ -94,7 +94,7 @@
                 >
               </div>
 
-              <v-card variant="tonal" class="pa-3 mb-4 tracker-card" color="primary">
+              <v-card variant="tonal" class="pa-3 mb-4 tracker-card" color="primary" rounded="lg">
                 <template #title>
                   <div class="d-flex align-center text-secondary">
                     <v-icon class="mr-2">mdi-information-outline</v-icon>
@@ -110,6 +110,7 @@
 
               <v-btn
                 type="button"
+                rounded="lg"
                 block
                 size="large"
                 class="mb-4"

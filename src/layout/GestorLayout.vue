@@ -1,192 +1,201 @@
 <template>
-  <v-app id="inspire">
-    <!-- App Bar -->
-    <v-app-bar flat>
-      <v-container class="mx-auto d-flex align-center justify-center">
-        <img
-          class="logo-lg mx-auto mb-3"
-          :src="logoUrl"
-          alt="d-journey"
-          width="44"
-          height="44"
-          decoding="async"
-          loading="eager"
-          fetchpriority="high"
-        />
-
-        <v-list-item
-          :prepend-avatar="managerAvatar"
-          :subtitle="managerEmail"
-          :title="managerName"
-          rounded="lg"
-          density="comfortable"
-          class="pb-3"
+  <v-layout>
+    <v-app-bar flat class="elevated fixed-app-bar" :extension-height="inMinhaArea ? 48 : 0">
+      <v-app-bar-title class="d-flex align-center">
+        <v-avatar size="32" class="mr-2" color="primary" rounded="lg">
+          <v-icon>mdi-account-tie</v-icon>
+        </v-avatar>
+        <span class="text-subtitle-1 font-weight-medium">Painel do Gestor</span>
+        <span v-if="selectedName" class="text-subtitle-2 font-weight-light ml-3">
+          - {{ selectedName }}</span
         >
-        </v-list-item>
-        <!-- usar o conteúdo do botão em vez de :text -->
-        <v-btn v-for="link in links" :key="link" variant="text">{{ link }}</v-btn>
+      </v-app-bar-title>
 
-        <v-spacer></v-spacer>
+      <v-spacer />
 
-        <v-responsive max-width="220">
-          <v-text-field
-            v-model="search"
-            density="compact"
-            label="Pesquisar"
-            rounded="lg"
-            variant="solo-filled"
-            flat
-            hide-details
-            single-line
-            clearable
-            prepend-inner-icon="mdi-magnify"
-          />
-        </v-responsive>
+      <!-- Abas de topo -->
+      <v-tabs density="comfortable" align-tabs="end">
+        <v-tab :to="{ name: 'djourney-gestor', params: { id: route.params.id } }" :exact="true">
+          <v-icon start>mdi-account-group</v-icon>Equipe
+        </v-tab>
 
-        <v-divider class="mx-3 align-self-center" length="24" thickness="2" vertical />
+        <v-tab :to="{ name: 'gestor-minha-diario', params: { id: route.params.id } }">
+          <v-icon start>mdi-account-circle</v-icon>Minha jornada
+        </v-tab>
 
-        <v-btn icon="mdi-logout" @click="$router.push({ name: 'logout' })" />
-      </v-container>
+        <v-tab :to="{ name: 'logout' }"> <v-icon start>mdi-logout</v-icon>Sair </v-tab>
+      </v-tabs>
+
+      <!-- Sub-abas só quando estamos em “Minha jornada” -->
+      <template #extension>
+        <div v-if="inMinhaArea" class="px-4 w-100">
+          <v-tabs density="comfortable" align-tabs="start">
+            <v-tab
+              :to="{ name: 'gestor-minha-diario', params: { id: route.params.id } }"
+              :exact="true"
+            >
+              <v-icon start>mdi-calendar-check</v-icon>Diário
+            </v-tab>
+            <v-tab :to="{ name: 'gestor-minha-mensal', params: { id: route.params.id } }">
+              <v-icon start>mdi-calendar-month</v-icon>Mensal
+            </v-tab>
+          </v-tabs>
+        </div>
+      </template>
     </v-app-bar>
 
-    <!-- Main -->
     <v-main>
-      <v-card class="mx-7 my-7 pa-4">
+      <!-- Breadcrumbs -->
+      <v-container fluid class="pt-4 pb-0">
+        <v-breadcrumbs :items="breadcrumbs" class="mb-2">
+          <template #divider>
+            <v-icon size="16">mdi-chevron-right</v-icon>
+          </template>
+        </v-breadcrumbs>
+      </v-container>
+
+      <v-container fluid class="py-4">
         <v-row>
-          <!-- Lateral esquerda: equipe do gestor -->
-          <v-col cols="12" md="3" lg="3">
-            <v-sheet rounded="lg">
-              <v-list rounded="lg" class="tracker-card" lines="two">
-                <v-list-subheader class="text-medium-emphasis">Minha equipe</v-list-subheader>
+          <!-- Coluna da Equipe (apenas na área “Equipe”) -->
+          <v-col v-if="isEquipeArea" cols="12" md="4" lg="3">
+            <v-card rounded="xl" class="tracker-card pa-4" elevation="10">
+              <div class="d-flex align-center mb-3">
+                <h2 class="text-subtitle-1 font-weight-bold mb-0">Sua equipe</h2>
+                <v-spacer />
+                <v-btn icon variant="text" :loading="user.loading" @click="reload()">
+                  <v-icon>mdi-refresh</v-icon>
+                  <v-tooltip activator="parent" text="Recarregar equipe" />
+                </v-btn>
+              </div>
 
-                <v-divider class="my-2" />
-                <template v-if="loading">
-                  <v-skeleton-loader
-                    type="list-item-two-line, list-item-two-line, list-item-two-line"
-                    class="px-3 pb-2"
-                  />
-                </template>
+              <v-text-field
+                v-model="query"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="mdi-magnify"
+                label="Buscar por nome ou e-mail"
+                hide-details
+                class="mb-3"
+                clearable
+              />
 
-                <template v-else>
-                  <v-alert
-                    v-if="error"
-                    type="error"
-                    variant="tonal"
-                    class="mx-3 my-2"
-                    :text="error"
-                  />
-                  <v-alert
-                    v-else-if="filteredUsers.length === 0"
-                    type="info"
-                    variant="tonal"
-                    class="mx-3 my-2"
-                    text="Nenhum usuário encontrado."
-                  />
+              <v-alert
+                v-if="user.error"
+                type="error"
+                variant="tonal"
+                class="mb-3"
+                :text="user.error"
+              />
 
-                  <v-list-item
-                    v-for="u in filteredUsers"
-                    :key="u.id ?? u.email ?? u.name"
-                    :prepend-avatar="userAvatar(u)"
-                    :title="u.name"
-                    :subtitle="u.email"
-                    rounded="lg"
-                    density="comfortable"
-                    :to="{
-                      // [FIX] Navegação correta por nome de rota filho, preservando o :id do gestor
-                      name: 'djourney-gestor-usuario',
-                      params: { id: $route.params.id, userId: u.id },
-                    }"
-                    :exact="true"
-                    active-class="router-link-exact-active"
-                    link
-                  >
-                    <template #append>
-                      <v-badge v-show="u.onLine" color="green" dot overlap class="mb-2 ml-5" />
-                      <v-badge v-show="!u.onLine" color="red" dot overlap class="mb-2 ml-5" />
-                    </template>
-                  </v-list-item>
+              <v-skeleton-loader
+                v-if="user.loading && !user.team?.length"
+                type="list-item-two-line, list-item-two-line, list-item-two-line"
+                class="mb-2"
+              />
 
-                  <v-divider class="my-2" />
+              <v-list lines="two" class="soft-card">
+                <v-list-item
+                  v-for="m in filteredTeam"
+                  :key="m.id"
+                  :title="m.name || m.nome || m.fullName || m.email || `ID ${m.id}`"
+                  :subtitle="m.email"
+                  class="fade-in"
+                  @click="openMember(m)"
+                  rounded="lg"
+                >
+                  <template #prepend>
+                    <v-avatar size="36" color="secondary" rounded="lg">
+                      <v-icon>mdi-account</v-icon>
+                    </v-avatar>
+                  </template>
+                  <template #append>
+                    <v-btn
+                      icon
+                      variant="text"
+                      :aria-label="`Abrir jornada de ${m.name || m.email}`"
+                    >
+                      <v-icon>mdi-chevron-right</v-icon>
+                    </v-btn>
+                  </template>
+                </v-list-item>
 
-                  <v-list-item
-                    color="grey-lighten-4"
-                    title="Atualizar lista"
-                    prepend-icon="mdi-refresh"
-                    link
-                    @click="reloadTeam()"
-                  />
-                </template>
+                <v-list-item v-if="!user.loading && filteredTeam.length === 0">
+                  <v-list-item-title class="text-medium-emphasis">
+                    Nenhum colaborador encontrado.
+                  </v-list-item-title>
+                </v-list-item>
               </v-list>
-            </v-sheet>
+            </v-card>
           </v-col>
 
-          <!-- Conteúdo principal -->
-          <v-col cols="12" md="9" lg="9">
-            <v-sheet min-height="70vh" rounded="lg">
-              <RouterView :key="`sel-${$route.params.userId || 'none'}`" />
-            </v-sheet>
+          <!-- Área de conteúdo -->
+          <v-col :cols="12" :md="isEquipeArea ? 8 : 12" :lg="isEquipeArea ? 9 : 12">
+            <router-view />
           </v-col>
         </v-row>
-      </v-card>
+      </v-container>
     </v-main>
-  </v-app>
+  </v-layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import { useTheme } from 'vuetify'
+import { useBreadcrumbs, defaultGestorBreadcrumbs } from '@/composables/breadcrumbs'
 
-const links = ['Dashboard', 'Minhas Marcações', 'Aprovações', 'Relatórios']
+const user = useUserStore()
+const route = useRoute()
+const router = useRouter()
 
-const theme = useTheme()
-const userStore = useUserStore()
-const auth = useAuthStore()
+const query = ref('')
+const titulo = ref('')
 
-const DEFAULT_AVATAR = '/sem-imagem.png'
-const search = ref('')
-const logoUrl = '/d-journey-logo-mark.svg'
+// tenta meta.selectedUser (setado pela guard da rota) e cai pro userStore (hidratado pelo tracker)
+const selectedName = computed(() => route.meta?.selectedUser?.name)
 
-function reloadTeam() {
-  // separação: equipe do gestor logado (conta), não do userStore (selecionado)
-  return userStore.reloadTeam(auth.accountId)
-}
-
-/* Header do gestor (conta logada) */
-const managerName = computed(() => auth.account?.name || 'Gestor')
-const managerEmail = computed(() => auth.account?.email || 'email@empresa.com')
-const managerAvatar = computed(() =>
-  auth.account?.avatarUrl ? `/${auth.account.avatarUrl}` : DEFAULT_AVATAR,
+// estamos na área “Equipe” (lista de membros) ou “Minha jornada” (diário/mensal do próprio gestor)?
+const isEquipeArea = computed(
+  () => route.name === 'djourney-gestor' || route.name === 'djourney-gestor-usuario',
 )
+const inMinhaArea = computed(() => String(route.name || '').startsWith('gestor-minha-'))
 
-/* Lista/estado */
-const team = computed(() => (Array.isArray(userStore.team) ? userStore.team : []))
-const loading = computed(() => userStore.loading)
-const error = computed(() => userStore.error)
+// breadcrumbs por composable (usa meta.breadcrumb; senão, fallback do Gestor)
+const { breadcrumbs } = useBreadcrumbs(defaultGestorBreadcrumbs)
 
-function userAvatar(u) {
-  return u?.avatarUrl ? `/${u.avatarUrl}` : DEFAULT_AVATAR
+const filteredTeam = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return user.team || []
+  return (user.team || []).filter((m) => {
+    const name = (m.name || m.nome || m.fullName || '').toLowerCase()
+    const email = String(m.email || '').toLowerCase()
+    return name.includes(q) || email.includes(q)
+  })
+})
+
+async function reload() {
+  const managerId = Number(route.params.id)
+  await user.reloadTeam(managerId)
 }
 
-const filteredUsers = computed(() => {
-  const base = team.value
-  if (!Array.isArray(base) || base.length === 0) return []
-  const q = (search.value || '').toLowerCase().trim()
-  if (!q) return base
-  return base.filter(
-    (u) =>
-      String(u.name || '')
-        .toLowerCase()
-        .includes(q) ||
-      String(u.email || '')
-        .toLowerCase()
-        .includes(q),
-  )
-})
+function openMember(m) {
+  titulo.value = `Jornada de ${m.name || m.email}`
+  router.push({
+    name: 'djourney-gestor-usuario',
+    params: { id: route.params.id, userId: m.id },
+  })
+}
 
 onMounted(async () => {
-  theme.change(auth.account?.themeColor || 'light')
-  await reloadTeam()
+  await user.ensureHydratedById(Number(route.params.id))
+  await reload()
 })
+
+watch(
+  () => route.params.id,
+  async () => {
+    await user.ensureHydratedById(Number(route.params.id))
+    await reload()
+  },
+)
 </script>

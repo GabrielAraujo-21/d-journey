@@ -44,6 +44,12 @@ const props = defineProps({
 
 const toDate = (v) => (v instanceof Date ? v : new Date(v))
 const label = computed(() => weekLabel(toDate(props.currentWeekStart)))
+
+// onMounted(() => {
+//   console.log('currentWeekStart', props.currentWeekStart)
+//   console.log('currentWeek', props.currentWeek)
+//   console.log('targetDailyMinutes', props.targetDailyMinutes)
+// })
 </script>
 
 <style scoped>

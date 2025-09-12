@@ -115,8 +115,45 @@
         }
       ],
       "totalMin": 498,
+      "status": "aprovado",
+      "meta": {
+        "submittedAt": "2025-09-01T18:15:00.000Z",
+        "reviewedAt": "2025-09-01T19:00:00.000Z",
+        "reviewerId": 2,
+        "reviewNote": "Ok.",
+        "locks": {
+          "userLocked": true
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-01T18:10:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-01T18:15:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-01T19:00:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "enviado",
+          "to": "aprovado",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-01T08:00:00.000Z",
-      "updatedAt": "2025-09-01T18:10:00.000Z"
+      "updatedAt": "2025-09-01T19:00:00.000Z"
     },
     {
       "id": "20250902-1",
@@ -124,17 +161,58 @@
       "data": "2025-09-02",
       "pares": [
         {
-          "in": "09:12",
+          "in": null,
           "out": "12:02"
         },
         {
           "in": "13:08",
           "out": "18:01"
+        },
+        {
+          "in": "",
+          "out": ""
         }
       ],
-      "totalMin": 463,
+      "totalMin": 293,
+      "status": "reprovado",
+      "meta": {
+        "submittedAt": "2025-09-02T18:05:00.000Z",
+        "reviewedAt": "2025-09-02T19:10:00.000Z",
+        "reviewerId": 2,
+        "reviewNote": "Ajustar saída para 18:00 ou justificar 18:01.",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-02T18:00:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-02T18:05:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-02T19:10:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "enviado",
+          "to": "reprovado",
+          "reason": "Saída fora da regra"
+        }
+      ],
       "createdAt": "2025-09-02T08:00:00.000Z",
-      "updatedAt": "2025-09-02T18:10:00.000Z"
+      "updatedAt": "2025-09-12T01:08:48.049Z"
     },
     {
       "id": "20250903-1",
@@ -151,8 +229,37 @@
         }
       ],
       "totalMin": 465,
+      "status": "enviado",
+      "meta": {
+        "submittedAt": "2025-09-03T18:00:00.000Z",
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": true
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-03T17:50:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-03T18:00:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-03T08:00:00.000Z",
-      "updatedAt": "2025-09-03T18:10:00.000Z"
+      "updatedAt": "2025-09-03T18:00:00.000Z"
     },
     {
       "id": "20250904-1",
@@ -169,8 +276,29 @@
         }
       ],
       "totalMin": 525,
+      "status": "pronto",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-04T19:05:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-04T08:00:00.000Z",
-      "updatedAt": "2025-09-04T18:10:00.000Z"
+      "updatedAt": "2025-09-04T19:05:00.000Z"
     },
     {
       "id": "20250905-1",
@@ -187,8 +315,55 @@
         }
       ],
       "totalMin": 413,
+      "status": "rascunho",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [],
       "createdAt": "2025-09-05T08:00:00.000Z",
       "updatedAt": "2025-09-06T00:52:35.895Z"
+    },
+    {
+      "id": "20250906-1",
+      "userId": 1,
+      "data": "2025-09-06",
+      "pares": [
+        {
+          "in": "08:47",
+          "out": "09:10"
+        }
+      ],
+      "totalMin": 23,
+      "status": "pronto",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-06T12:01:09.503Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        }
+      ],
+      "createdAt": "2025-09-06T03:37:27.629Z",
+      "updatedAt": "2025-09-06T12:01:09.503Z"
     },
     {
       "id": "20250907-1",
@@ -201,8 +376,105 @@
         }
       ],
       "totalMin": 240,
+      "status": "fechado",
+      "meta": {
+        "submittedAt": "2025-09-07T18:05:00.000Z",
+        "reviewedAt": "2025-09-07T19:00:00.000Z",
+        "reviewerId": 2,
+        "reviewNote": "Plantão noturno contabilizado.",
+        "locks": {
+          "userLocked": true
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-07T18:00:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-07T18:05:00.000Z",
+          "by": 1,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-07T19:00:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "enviado",
+          "to": "aprovado",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-07T19:05:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "aprovado",
+          "to": "fechado",
+          "reason": "Fechamento extraordinário"
+        }
+      ],
       "createdAt": "2025-09-07T08:00:00.000Z",
-      "updatedAt": "2025-09-07T18:10:00.000Z"
+      "updatedAt": "2025-09-07T19:05:00.000Z"
+    },
+    {
+      "id": "20250908-1",
+      "userId": 1,
+      "data": "2025-09-08",
+      "pares": [
+        {
+          "in": "20:00",
+          "out": "20:29"
+        }
+      ],
+      "totalMin": 29,
+      "status": "rascunho",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [],
+      "createdAt": "2025-09-09T01:27:14.055Z",
+      "updatedAt": "2025-09-09T23:29:17.439Z"
+    },
+    {
+      "id": "20250909-1",
+      "userId": 1,
+      "data": "2025-09-09",
+      "pares": [
+        {
+          "in": "19:39",
+          "out": "20:39"
+        }
+      ],
+      "totalMin": 60,
+      "status": "rascunho",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [],
+      "createdAt": "2025-09-09T23:39:17.513Z",
+      "updatedAt": "2025-09-09T23:39:40.764Z"
     },
     {
       "id": "20250901-2",
@@ -223,6 +495,18 @@
         }
       ],
       "totalMin": 485,
+      "status": "rascunho",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [],
       "createdAt": "2025-09-01T08:00:00.000Z",
       "updatedAt": "2025-09-01T18:10:00.000Z"
     },
@@ -237,6 +521,27 @@
         }
       ],
       "totalMin": 270,
+      "status": "pronto",
+      "meta": {
+        "submittedAt": null,
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": false
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-02T14:45:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-02T08:00:00.000Z",
       "updatedAt": "2025-09-02T18:10:00.000Z"
     },
@@ -255,8 +560,37 @@
         }
       ],
       "totalMin": 400,
+      "status": "enviado",
+      "meta": {
+        "submittedAt": "2025-09-03T17:30:00.000Z",
+        "reviewedAt": null,
+        "reviewerId": null,
+        "reviewNote": "",
+        "locks": {
+          "userLocked": true
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-03T17:25:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-03T17:30:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-03T08:00:00.000Z",
-      "updatedAt": "2025-09-03T18:10:00.000Z"
+      "updatedAt": "2025-09-03T17:30:00.000Z"
     },
     {
       "id": "20250905-2",
@@ -269,50 +603,45 @@
         }
       ],
       "totalMin": 330,
+      "status": "aprovado",
+      "meta": {
+        "submittedAt": "2025-09-05T19:35:00.000Z",
+        "reviewedAt": "2025-09-05T20:10:00.000Z",
+        "reviewerId": 3,
+        "reviewNote": "Conferido.",
+        "locks": {
+          "userLocked": true
+        },
+        "revision": 0
+      },
+      "history": [
+        {
+          "at": "2025-09-05T19:32:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "rascunho",
+          "to": "pronto",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-05T19:35:00.000Z",
+          "by": 2,
+          "action": "status",
+          "from": "pronto",
+          "to": "enviado",
+          "reason": ""
+        },
+        {
+          "at": "2025-09-05T20:10:00.000Z",
+          "by": 3,
+          "action": "status",
+          "from": "enviado",
+          "to": "aprovado",
+          "reason": ""
+        }
+      ],
       "createdAt": "2025-09-05T08:00:00.000Z",
-      "updatedAt": "2025-09-05T18:10:00.000Z"
-    },
-    {
-      "id": "20250906-1",
-      "userId": 1,
-      "data": "2025-09-06",
-      "pares": [
-        {
-          "in": "08:47",
-          "out": "09:10"
-        }
-      ],
-      "totalMin": 23,
-      "createdAt": "2025-09-06T03:37:27.629Z",
-      "updatedAt": "2025-09-06T12:01:09.503Z"
-    },
-    {
-      "id": "20250908-1",
-      "userId": 1,
-      "data": "2025-09-08",
-      "pares": [
-        {
-          "in": "20:00",
-          "out": "20:29"
-        }
-      ],
-      "totalMin": 29,
-      "createdAt": "2025-09-09T01:27:14.055Z",
-      "updatedAt": "2025-09-09T23:29:17.439Z"
-    },
-    {
-      "id": "20250909-1",
-      "userId": 1,
-      "data": "2025-09-09",
-      "pares": [
-        {
-          "in": "19:39",
-          "out": "20:39"
-        }
-      ],
-      "totalMin": 60,
-      "createdAt": "2025-09-09T23:39:17.513Z",
-      "updatedAt": "2025-09-09T23:39:40.764Z"
+      "updatedAt": "2025-09-05T20:10:00.000Z"
     }
   ],
   "tipoContratos": [

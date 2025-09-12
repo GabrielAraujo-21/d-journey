@@ -10,42 +10,43 @@ import { useAuthStore } from '@/stores/auth'
 
 const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
+const APP_TITLE = 'd-journey'
+function pickUserLabel(u) {
+  return u?.name || u?.nome || u?.fullName || u?.email || null
+}
+function resolveRouteTitle(to) {
+  for (let i = to.matched.length - 1; i >= 0; i--) {
+    const rec = to.matched[i]
+    const t = rec?.meta?.title
+    if (!t) continue
+    return typeof t === 'function' ? t(to) : t
+  }
+  return null
+}
+
 const routes = [
-  {
-    path: '/',
-    name: 'Login',
-    component: Login,
-  },
+  { path: '/', name: 'Login', component: Login, meta: { title: 'Entrar' } },
 
   {
     path: '/user/:id',
     name: 'usuario',
     component: UsuarioLayout,
-    meta: { requiresAuth: true },
-    props: (route) => ({
-      apiBase,
-      userId: Number(route.params.id),
-      order: 'desc',
-    }),
+    meta: { requiresAuth: true, title: (to) => `Área do Usuário • ID ${to.params.id}` },
+    props: (route) => ({ apiBase, userId: Number(route.params.id), order: 'desc' }),
     children: [
       {
         path: '',
         name: 'djourney',
         component: DJourneyTimeTracker,
-        props: (route) => ({
-          apiBase,
-          userId: Number(route.params.id),
-        }),
+        meta: { title: 'Check-Point Diário' },
+        props: (route) => ({ apiBase, userId: Number(route.params.id) }),
       },
       {
         path: 'historico-mensal',
         name: 'historico-mensal',
         component: HistoricoMensal,
-        props: (route) => ({
-          apiBase,
-          userId: Number(route.params.id),
-          order: 'desc',
-        }),
+        meta: { title: 'Histórico Mensal' },
+        props: (route) => ({ apiBase, userId: Number(route.params.id), order: 'desc' }),
       },
     ],
   },
@@ -54,58 +55,110 @@ const routes = [
     path: '/admin/:id',
     name: 'gestor',
     component: GestorLayout,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: (to) => `Painel do Gestor • ID ${to.params.id}` },
     children: [
+      // Equipe (lista + tracker vazio)
       {
         path: '',
         name: 'djourney-gestor',
         component: DJourneyTimeTracker,
-        props: {
-          apiBase,
-          userId: null,
+        meta: {
+          title: 'Equipe',
+          breadcrumb: (to) => [
+            { title: 'Gestor', disabled: true },
+            { title: 'Equipe', to: { name: 'djourney-gestor', params: { id: to.params.id } } },
+          ],
         },
+        props: { apiBase, userId: null },
       },
 
-      // [ADD] Guard per-route: busca o usuário selecionado e injeta como props
+      // Usuário selecionado pelo gestor (a partir da lista)
       {
         path: 'usuario/:userId',
         name: 'djourney-gestor-usuario',
         component: DJourneyTimeTracker,
-        // props inclui o userId e o objeto resolvido na guard (via meta)
+        meta: {
+          title: (to) => {
+            const u = to.meta?.selectedUser
+            const who = pickUserLabel(u) || `ID ${to.params.userId}`
+            return `Check-Point Diário • ${who}`
+          },
+          breadcrumb: (to) => {
+            const u = to.meta?.selectedUser
+            return [
+              { title: 'Gestor', disabled: true },
+              { title: 'Equipe', to: { name: 'djourney-gestor', params: { id: to.params.id } } },
+              { title: pickUserLabel(u) || `ID ${to.params.userId}`, disabled: true },
+            ]
+          },
+        },
         props: (route) => ({
           apiBase,
           userId: Number(route.params.userId),
-          selectedUser: route.meta?.selectedUser ?? null, // << aqui vai o payload buscado
+          selectedUser: route.meta?.selectedUser ?? null,
         }),
-        // Guard executa antes de entrar na rota:
         beforeEnter: async (to) => {
           const userId = Number(to.params.userId)
           if (!Number.isFinite(userId)) {
-            // userId inválido — deixa seguir sem bloquear, mas sem selectedUser
             to.meta.selectedUser = null
             return true
           }
           try {
-            // import dinâmico evita ciclos e só carrega quando necessário
             const mod = await import('@/services/api')
-            // se houver getUserById, usa; caso contrário, fallback p/ http
             const getUserById = mod.getUserById
             const http = mod.http
-
             const resp = getUserById
               ? await getUserById(userId)
               : await http.get(`/users/${userId}`)
-
-            // normaliza (resp, resp.data ou array)
             const u = Array.isArray(resp?.data) ? resp.data[0] : (resp?.data ?? resp) || null
-
             to.meta.selectedUser = u || null
           } catch (e) {
             console.warn('Falha ao buscar usuário selecionado:', e)
             to.meta.selectedUser = null
           }
-          return true // permite a navegação
+          return true
         },
+      },
+
+      // Minha jornada (sub-abas)
+      {
+        path: 'minha',
+        redirect: (to) => ({ name: 'gestor-minha-diario', params: { id: to.params.id } }),
+      },
+      {
+        path: 'minha/diario',
+        name: 'gestor-minha-diario',
+        component: DJourneyTimeTracker,
+        meta: {
+          title: 'Minha jornada • Diário',
+          breadcrumb: (to) => [
+            { title: 'Gestor', disabled: true },
+            {
+              title: 'Minha jornada',
+              to: { name: 'gestor-minha-diario', params: { id: to.params.id } },
+            },
+            { title: 'Diário', disabled: true },
+          ],
+        },
+        // Aqui usamos o próprio :id do gestor como userId alvo
+        props: (route) => ({ apiBase, userId: Number(route.params.id) }),
+      },
+      {
+        path: 'minha/mensal',
+        name: 'gestor-minha-mensal',
+        component: HistoricoMensal,
+        meta: {
+          title: 'Minha jornada • Mensal',
+          breadcrumb: (to) => [
+            { title: 'Gestor', disabled: true },
+            {
+              title: 'Minha jornada',
+              to: { name: 'gestor-minha-diario', params: { id: to.params.id } },
+            },
+            { title: 'Mensal', disabled: true },
+          ],
+        },
+        props: (route) => ({ apiBase, userId: Number(route.params.id), order: 'desc' }),
       },
     ],
   },
@@ -114,10 +167,9 @@ const routes = [
   {
     path: '/logout',
     name: 'logout',
+    meta: { title: 'Saindo…' },
     beforeEnter: async () => {
       const auth = useAuthStore()
-
-      // atualiza status online da conta logada (se houver)
       if (auth.accountId) {
         try {
           await patchUser(auth.accountId, { onLine: false })
@@ -125,14 +177,10 @@ const routes = [
           console.warn('Falha ao marcar conta como offline', e)
         }
       }
-
-      // encerra sessão (limpa tokens + account no authStore)
       await auth.signOut({ notifyServer: false })
 
-      // “resetar” o contexto analisado:
       const userStore = useUserStore()
       userStore.clear()
-
       return { name: 'Login' }
     },
   },
@@ -140,6 +188,7 @@ const routes = [
   {
     path: '/:catchAll(.*)*',
     component: () => import('@/views/NotFound.vue'),
+    meta: { title: 'Página não encontrada' },
   },
 ]
 
@@ -148,7 +197,6 @@ const router = createRouter({
   routes,
 })
 
-// Guard global de auth (mantido)
 router.beforeEach((to) => {
   const auth = useAuthStore()
   auth.bootstrap()
@@ -156,6 +204,26 @@ router.beforeEach((to) => {
   if (to.meta?.requiresAuth && !auth.isAuthenticated) {
     return { name: 'Login', query: { redirect: to.fullPath } }
   }
+
+  // Quem não é gestor não entra em /admin
+  if (to.name?.toString().startsWith('gestor') && auth.account?.PerfilTipoId !== 3) {
+    return { name: 'usuario', params: { id: auth.accountId } }
+  }
+
+  // Usuário comum só pode acessar sua própria área /user/:id
+  if (to.name === 'usuario') {
+    const targetId = Number(to.params.id)
+    if (auth.account?.PerfilTipoId === 4 && auth.accountId !== targetId) {
+      return { name: 'usuario', params: { id: auth.accountId } }
+    }
+  }
+
+  console.log('navegar para', to)
+})
+
+router.afterEach((to) => {
+  const t = resolveRouteTitle(to)
+  document.title = t ?? APP_TITLE
 })
 
 export default router

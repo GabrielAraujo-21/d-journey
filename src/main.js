@@ -16,6 +16,17 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import App from './App.vue'
 import router from './router'
 
+function getInitialTheme() {
+  if (typeof window === 'undefined') return 'light'
+  try {
+    const saved = JSON.parse(localStorage.getItem('auth.session') || '{}')
+    const mode = saved?.account?.themeColor
+    return mode === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
 // Instância do Vuetify
 const vuetify = createVuetify({
   components,
@@ -24,6 +35,10 @@ const vuetify = createVuetify({
     defaultSet: 'mdi',
     aliases,
     sets: { mdi },
+  },
+  theme: {
+    defaultTheme: getInitialTheme(),
+    // themes: { light: {...}, dark: {...} } // se você define temas custom
   },
 })
 

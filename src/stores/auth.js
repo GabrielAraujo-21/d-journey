@@ -156,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     setHttpAuthHeader(tokenType.value, accessToken.value)
   }
 
-  function bootstrap() {
+  function bootstrap({ applyTheme } = {}) {
     if (accessToken.value) return
     const saved = STORAGE.get()
     if (!saved) return
@@ -167,6 +167,11 @@ export const useAuthStore = defineStore('auth', () => {
       expiresAtMs: saved.expiresAt ?? null,
     })
     if (saved.account) setAccount(saved.account) // restaura conta
+
+    if (applyTheme) {
+      const desired = saved.account?.themeColor ?? 'light'
+      applyTheme(desired)
+    }
   }
 
   async function signIn({ email, password } = {}) {

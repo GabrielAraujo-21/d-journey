@@ -6,7 +6,7 @@
 // - Mantém as mesmas assinaturas que você já utiliza no projeto
 // -----------------------------------------------------------------------------
 //
-// Instalado com:
+// Instalar com:
 //   npm i -E date-fns@^3 date-fns-tz@^3
 //
 // Observação importante (v3):
@@ -14,7 +14,14 @@
 //   zonedTimeToUtc  -> fromZonedTime
 // -----------------------------------------------------------------------------
 
-import { addDays as addDaysFn, startOfWeek, differenceInMinutes } from 'date-fns'
+import {
+  addDays as addDaysFn,
+  startOfWeek,
+  differenceInMinutes,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+} from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz'
 
@@ -23,7 +30,6 @@ export const ZONE = 'America/Sao_Paulo'
 
 /** Converte entrada para Date e valida; evita "Invalid time value" em format(). */
 function asDate(input, ctx = 'date') {
-  // const d = input instanceof Date ? input : new Date(input)
   // Se vier "YYYY-MM-DD", trata como data local no fuso ZONE (00:00 daquele dia)
   if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
     const dLocal = fromZonedTime(`${input}T00:00:00`, ZONE)
@@ -35,6 +41,13 @@ function asDate(input, ctx = 'date') {
     throw new RangeError(`Invalid time value: ${ctx}`)
   }
   return d
+}
+
+/** Normaliza para 00:00:00.000 (no fuso local do objeto Date) */
+function normalizeStartOfDay(d) {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
 }
 
 // -----------------------------------------------------------------------------
@@ -143,4 +156,68 @@ export function pairMinutesTz(p, isoDate) {
   if (end < start) end = addDaysFn(end, 1)
 
   return Math.max(0, differenceInMinutes(end, start))
+}
+
+// -----------------------------------------------------------------------------
+// ADIÇÕES para eliminar duplicações em registros/HistoricoMensal (mantendo nomes):
+// -----------------------------------------------------------------------------
+
+// Alias para manter nomenclatura usada em registros.js
+export const weekStart = (d, startOnMonday = true) => getWeekStart(d, startOnMonday)
+
+// Rótulos de dias por índice (0..6)
+export const weekdayLabelByIndex = (idx, startOnMonday = true) => {
+  const listMon = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+  const listSun = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  return (startOnMonday ? listMon : listSun)[idx]
+}
+
+// Rótulo pelo Date
+export const weekdayLabelByDate = (d) => {
+  const names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const dd = asDate(d, 'weekdayLabelByDate')
+  return names[dd.getDay()]
+}
+
+// Conveniência (mesma assinatura já usada)
+export const weekdayLabel = weekdayLabelByDate
+
+// -----------------------------------------------------------------------------
+// NOVOS HELPERS MENSAIS (para Histórico Mensal)
+// -----------------------------------------------------------------------------
+
+/**
+ * Retorna { start, end } do mês corrente com base em `d`.
+ * - start: 1º dia do mês de `d`
+ * - end: se o mês é o mês atual -> hoje (00:00); senão -> último dia do mês
+ */
+export function monthRangeCurrent(d = new Date()) {
+  const base = toZonedTime(asDate(d, 'monthRangeCurrent'), ZONE)
+  const start = normalizeStartOfDay(startOfMonth(base))
+
+  const now = toZonedTime(new Date(), ZONE)
+  const sameMonth = start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth()
+
+  const end = sameMonth
+    ? normalizeStartOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+    : normalizeStartOfDay(endOfMonth(start))
+
+  return { start, end }
+}
+
+/**
+ * Retorna { start, end } do mês anterior ao de `d`.
+ * - start: 1º dia do mês anterior
+ * - end: último dia do mês anterior
+ */
+export function monthRangePrevious(d = new Date()) {
+  const base = toZonedTime(asDate(d, 'monthRangePrevious'), ZONE)
+  const prevStart = normalizeStartOfDay(addMonths(startOfMonth(base), -1))
+  const prevEnd = normalizeStartOfDay(endOfMonth(prevStart))
+  return { start: prevStart, end: prevEnd }
+}
+
+/** Rótulo do mês no formato "mmmm yyyy" no fuso ZONE (ex.: "setembro 2025"). */
+export function monthLabel(d) {
+  return formatInTimeZone(asDate(d, 'monthLabel'), ZONE, 'LLLL yyyy', { locale: ptBR })
 }

@@ -14,7 +14,12 @@
     </v-col>
 
     <v-col cols="12" md="3" class="d-flex align-end justify-end">
-      <v-btn color="primary" class="text-none" @click="$emit('add-pair')">
+      <v-btn
+        color="primary"
+        class="text-none"
+        :disabled="disabled"
+        @click="$emit('add-pair')"
+      >
         <template #prepend>
           <v-icon>mdi-plus</v-icon>
         </template>
@@ -23,7 +28,12 @@
     </v-col>
 
     <v-col cols="12" md="3" class="d-flex align-end justify-end">
-      <v-btn variant="tonal" class="text-none" @click="$emit('sort-pairs')">
+      <v-btn
+        variant="tonal"
+        class="text-none"
+        :disabled="disabled || pairs.length === 0"
+        @click="$emit('sort-pairs')"
+      >
         <template #prepend>
           <v-icon>mdi-sort-clock-ascending-outline</v-icon>
         </template>
@@ -32,13 +42,18 @@
     </v-col>
 
     <v-col cols="12" md="2" class="d-flex align-end justify-end">
-      <v-btn variant="text" class="text-none" @click="$emit('clear-day')">
+      <v-btn
+        variant="text"
+        class="text-none"
+        :disabled="disabled || pairs.length === 0"
+        @click="$emit('clear-day')"
+      >
         <template #prepend>
           <v-icon>mdi-broom</v-icon>
         </template>
-        <template #default
-          ><span class="text-body-2" style="font-size: 0.875rem">Limpar dia</span></template
-        >
+        <template #default>
+          <span class="text-body-2" style="font-size: 0.875rem">Limpar dia</span>
+        </template>
       </v-btn>
     </v-col>
   </v-row>
@@ -72,6 +87,7 @@
           prepend-inner-icon="mdi-login-variant"
           hide-details="auto"
           clearable
+          :disabled="disabled"
           @blur="$emit('persist')"
         >
           <template #append-inner>
@@ -79,6 +95,7 @@
             <v-btn
               icon
               variant="text"
+              :disabled="disabled"
               @click="p.in = nowHM()"
               :aria-label="`Entrada agora (par ${idx + 1})`"
             >
@@ -101,6 +118,7 @@
           :error-messages="invalidMessage(idx)"
           hide-details="auto"
           clearable
+          :disabled="disabled"
           @blur="$emit('persist')"
         >
           <template #append-inner>
@@ -108,6 +126,7 @@
             <v-btn
               icon
               variant="text"
+              :disabled="disabled"
               @click="p.out = nowHM()"
               :aria-label="`Saída agora (par ${idx + 1})`"
             >
@@ -131,6 +150,7 @@
         <v-btn
           icon
           variant="text"
+          :disabled="disabled"
           @click="$emit('duplicate-pair', idx)"
           :aria-label="`Duplicar par ${idx + 1}`"
         >
@@ -141,6 +161,7 @@
           icon
           variant="text"
           color="error"
+          :disabled="disabled"
           @click="$emit('remove-pair', idx)"
           :aria-label="`Remover par ${idx + 1}`"
         >
@@ -203,9 +224,10 @@ const props = defineProps({
   currentDate: { type: String, required: true },
   pairs: { type: Array, required: true },
   targetDailyMinutes: { type: Number, required: true },
+  // NOVO: bloqueio dos inputs do dia
+  disabled: { type: Boolean, default: false },
 
-  // (opcional) dados pré-calculados vindos do pai/store — se vierem, usamos;
-  // senão, calculamos localmente (fallback).
+  // (opcionais) vindos do pai/store
   dayTotal: { type: Number, default: null },
   progressDaily: { type: Number, default: null },
   incompleteCount: { type: Number, default: null },
@@ -227,7 +249,7 @@ const currentDateModel = computed({
   set: (v) => emit('update:currentDate', v),
 })
 
-// Derivados locais (independência do componente)
+// Derivados locais
 const dayTotalLocal = computed(
   () => props.dayTotal ?? props.pairs.reduce((a, p) => a + pairMinutes(p), 0),
 )

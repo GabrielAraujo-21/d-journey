@@ -111,7 +111,7 @@ export const useUserStore = defineStore('user', () => {
     'ativo',
     'themeColor',
     // se desejar, adicione 'registros'
-    'registros',
+    // 'registros',
   ]
 
   /**
@@ -262,6 +262,7 @@ export const useUserStore = defineStore('user', () => {
     const wanted = Number(uid)
     if (!Number.isFinite(wanted)) return
     // tenta do storage primeiro
+
     bootstrap()
     if (id.value === wanted) return
 
@@ -275,40 +276,7 @@ export const useUserStore = defineStore('user', () => {
     } catch (e) {
       console.warn('ensureHydratedById failed:', e)
     }
-  }  
-  // async function ensureHydratedById(targetId) {
-  //   const idNum = Number(targetId)
-  //   if (!Number.isFinite(idNum)) return
-
-  //   // 1) Já está hidratado com o mesmo user?
-  //   if (id.value === idNum && id.value != null) return
-
-  //   // 2) Tenta bater com o snapshot do localStorage
-  //   try {
-  //     const raw = STORAGE.get(AUTH_KEY)
-  //     if (raw) {
-  //       const parsed = JSON.parse(raw)
-  //       const cached = parsed?.user
-  //       if (cached && Number(cached.id) === idNum) {
-  //         setUser(cached)
-  //         return
-  //       }
-  //     }
-  //   } catch (e) {
-  //     console.warn('LocalStorage - Falha ao hidratar usuário por ID:', e)
-  //   }
-
-  //   // 3) Fallback: busca na API
-  //   try {
-  //     const mod = await import('@/services/api')
-  //     const getUserById = mod.getUserById
-  //     const resp = getUserById ? await getUserById(idNum) : await mod.http.get(`/users/${idNum}`)
-  //     const u = Array.isArray(resp?.data) ? resp.data[0] : (resp?.data ?? resp) || null
-  //     if (u) setUser(u)
-  //   } catch (e) {
-  //     console.warn('API - Falha ao hidratar usuário por ID:', e)
-  //   }
-  // }
+  }
 
   /**
    * bootstrap — restaura do storage somente se ainda não há sessão
